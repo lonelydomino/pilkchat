@@ -57,6 +57,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update user profile
+    console.log('Updating user profile with image:', image ? 'Has image' : 'No image')
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: {
@@ -69,6 +70,8 @@ export async function PUT(request: NextRequest) {
         image: image || null,
       },
     })
+    
+    console.log('Updated user image:', updatedUser.image ? 'Has image' : 'No image')
 
     return NextResponse.json({
       success: true,

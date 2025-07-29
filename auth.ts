@@ -44,7 +44,7 @@ export const authOptions = {
           email: user.email,
           name: user.name,
           username: user.username,
-          image: user.image,
+          // Don't include image in JWT to avoid token size issues
         }
       }
     })
@@ -58,6 +58,7 @@ export const authOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.username = user.username
+        // Don't store image in JWT to avoid token size issues
       }
       return token
     },
@@ -65,6 +66,8 @@ export const authOptions = {
       if (token) {
         session.user.id = token.sub!
         session.user.username = token.username as string
+        // Don't include image in session to avoid token size issues
+        // Image will be fetched from database when needed
       }
       return session
     },

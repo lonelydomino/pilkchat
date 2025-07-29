@@ -7,7 +7,7 @@ declare module "next-auth" {
       email: string
       name: string
       username: string
-      image?: string
+      // Image is not included in session to avoid JWT size issues
     }
   }
 
@@ -23,5 +23,6 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     username: string
+    // Image is not included in JWT to avoid token size issues
   }
 } 

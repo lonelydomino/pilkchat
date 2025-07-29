@@ -163,8 +163,16 @@ export default function ProfilePage() {
       {/* Profile Header */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex items-start space-x-4 mb-6">
-          <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
-            <User className="w-10 h-10 text-gray-600" />
+          <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {profile.image ? (
+              <img 
+                src={profile.image} 
+                alt={`${profile.name}'s profile`}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User className="w-10 h-10 text-gray-600" />
+            )}
           </div>
           
           <div className="flex-1 min-w-0">

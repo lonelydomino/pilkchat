@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { User, Camera, Save, Loader2 } from 'lucide-react'
 import { PasswordChange } from '@/components/password-change'
+import { useUserImage } from '@/hooks/useUserImage'
 
 interface ProfileData {
   name: string
@@ -18,6 +19,7 @@ interface ProfileData {
 
 export default function SettingsPage() {
   const { data: session, update } = useSession()
+  const { image: userImage } = useUserImage()
   const [profileData, setProfileData] = useState<ProfileData>({
     name: '',
     username: '',
@@ -29,6 +31,7 @@ export default function SettingsPage() {
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [message, setMessage] = useState('')
 
   useEffect(() => {
@@ -40,11 +43,11 @@ export default function SettingsPage() {
         bio: '',
         location: '',
         website: '',
-        image: session.user.image || '',
+        image: userImage || '',
       })
       fetchProfileData()
     }
-  }, [session])
+  }, [session, userImage])
 
   const fetchProfileData = async () => {
     try {
@@ -70,6 +73,8 @@ export default function SettingsPage() {
     setIsSaving(true)
     setMessage('')
 
+    console.log('Submitting profile data:', profileData)
+
     try {
       const response = await fetch('/api/users/profile', {
         method: 'PUT',
@@ -80,9 +85,11 @@ export default function SettingsPage() {
       })
 
       if (response.ok) {
+        const result = await response.json()
+        console.log('Profile update response:', result)
         setMessage('Profile updated successfully!')
-        // Update session with new data
-        await update()
+        
+        console.log('Profile updated successfully')
       } else {
         const error = await response.json()
         setMessage(error.error || 'Failed to update profile')
@@ -99,10 +106,45 @@ export default function SettingsPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // For now, we'll just update the image URL
-    // In a real app, you'd upload to a service like Cloudinary
-    const imageUrl = URL.createObjectURL(file)
-    setProfileData(prev => ({ ...prev, image: imageUrl }))
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setMessage('Please select a valid image file')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      setMessage('Image file size must be less than 5MB')
+      return
+    }
+
+    setIsUploadingImage(true)
+    setMessage('')
+
+    try {
+      const formData = new FormData()
+      formData.append('image', file)
+
+      const response = await fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setProfileData(prev => ({ ...prev, image: data.url }))
+        setMessage('Image uploaded successfully!')
+      } else {
+        const error = await response.json()
+        setMessage(error.error || 'Failed to upload image')
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      setMessage('Failed to upload image')
+    } finally {
+      setIsUploadingImage(false)
+    }
   }
 
   if (isLoading) {
@@ -144,18 +186,28 @@ export default function SettingsPage() {
                     src={profileData.image} 
                     alt="Profile" 
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to default icon if image fails to load
+                      const target = e.target as HTMLImageElement
+                      target.style.display = 'none'
+                      target.nextElementSibling?.classList.remove('hidden')
+                    }}
                   />
-                ) : (
-                  <User className="w-10 h-10 text-gray-600" />
-                )}
+                ) : null}
+                <User className={`w-10 h-10 text-gray-600 ${profileData.image ? 'hidden' : ''}`} />
               </div>
-              <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-1 rounded-full cursor-pointer hover:bg-blue-700">
-                <Camera className="w-4 h-4" />
+              <label className={`absolute bottom-0 right-0 bg-blue-600 text-white p-1 rounded-full cursor-pointer hover:bg-blue-700 ${isUploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                {isUploadingImage ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Camera className="w-4 h-4" />
+                )}
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
                   className="hidden"
+                  disabled={isUploadingImage}
                 />
               </label>
             </div>

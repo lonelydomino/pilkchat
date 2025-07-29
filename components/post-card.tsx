@@ -136,10 +136,18 @@ export function PostCard({ post, onUpdate, onDelete }: PostCardProps) {
 
   return (
     <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-      <div className="flex space-x-3">
-        <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
-          <User className="w-5 h-5 text-gray-600" />
-        </div>
+                   <div className="flex space-x-3">
+               <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                 {post.author.image ? (
+                   <img 
+                     src={post.author.image} 
+                     alt={`${post.author.name}'s profile`}
+                     className="w-full h-full object-cover"
+                   />
+                 ) : (
+                   <User className="w-5 h-5 text-gray-600" />
+                 )}
+               </div>
         
         <div className="flex-1 min-w-0">
           {/* Header */}
