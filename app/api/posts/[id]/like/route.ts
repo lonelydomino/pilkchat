@@ -49,6 +49,25 @@ export async function POST(
           postId: postId,
         },
       })
+
+      // Get the post to find the author
+      const post = await prisma.post.findUnique({
+        where: { id: postId },
+        select: { authorId: true },
+      })
+
+      // Create notification for post author (if not liking own post)
+      if (post && post.authorId !== mockUserId) {
+        await prisma.notification.create({
+          data: {
+            type: 'like',
+            message: `${session.user.name} liked your post`,
+            userId: post.authorId,
+            relatedUserId: mockUserId,
+            relatedPostId: postId,
+          },
+        })
+      }
     }
 
     return NextResponse.json({ success: true })

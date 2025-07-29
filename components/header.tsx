@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Search, Bell, User } from 'lucide-react'
+import { NotificationBadge } from './notification-badge'
 
 export function Header() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -35,9 +36,7 @@ export function Header() {
 
         {/* Right side actions */}
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm">
-            <Bell className="w-5 h-5" />
-          </Button>
+          <NotificationBadge />
           
           <Button variant="ghost" size="sm">
             <User className="w-5 h-5" />

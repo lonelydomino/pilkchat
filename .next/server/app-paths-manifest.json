@@ -1,9 +1,13 @@
 {
   "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/page": "app/page.js",
-  "/api/posts/route": "app/api/posts/route.js",
-  "/api/search/route": "app/api/search/route.js",
+  "/api/notifications/unread-count/route": "app/api/notifications/unread-count/route.js",
+  "/(auth)/signup/page": "app/(auth)/signup/page.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/notifications/route": "app/api/notifications/route.js",
+  "/api/users/[username]/route": "app/api/users/[username]/route.js",
+  "/api/users/[username]/posts/route": "app/api/users/[username]/posts/route.js",
   "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
+  "/(dashboard)/notifications/page": "app/(dashboard)/notifications/page.js",
   "/(dashboard)/profile/[username]/page": "app/(dashboard)/profile/[username]/page.js",
-  "/(dashboard)/search/page": "app/(dashboard)/search/page.js"
+  "/(dashboard)/settings/page": "app/(dashboard)/settings/page.js"
 }

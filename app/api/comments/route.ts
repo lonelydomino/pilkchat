@@ -82,6 +82,19 @@ export async function POST(request: NextRequest) {
       replies: [],
     }
 
+    // Create notification for post author (if not commenting on own post)
+    if (post.authorId !== session.user.id) {
+      await prisma.notification.create({
+        data: {
+          type: 'comment',
+          message: `${session.user.name} commented on your post`,
+          userId: post.authorId,
+          relatedUserId: session.user.id,
+          relatedPostId: postId,
+        },
+      })
+    }
+
     return NextResponse.json(commentWithInteractions)
   } catch (error) {
     console.error('Error creating comment:', error)
