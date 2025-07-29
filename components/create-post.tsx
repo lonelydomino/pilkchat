@@ -106,13 +106,19 @@ export function CreatePost({ onPostCreated, placeholder = "What's happening?", c
           </div>
           
           {images.length < 4 && (
-            <ImageUpload
-              onUpload={handleImageUpload}
-              size="sm"
-              aspectRatio="auto"
-              placeholder="Add image"
-              maxSize={5}
-            />
+            <div className="flex items-center space-x-2">
+              <ImageUpload
+                onUpload={handleImageUpload}
+                size="sm"
+                variant="compact"
+                aspectRatio="auto"
+                placeholder="Add image"
+                maxSize={5}
+              />
+              <span className="text-xs text-gray-400">
+                {images.length}/4 images
+              </span>
+            </div>
           )}
 
           {/* Image Preview Grid */}

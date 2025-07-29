@@ -20,6 +20,7 @@ interface Post {
     username: string
     image?: string
   }
+  hashtags?: { name: string }[]
   mediaUrls?: string[]
   _count: {
     likes: number
@@ -191,6 +192,24 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
     setCurrentImageIndex(index)
   }
 
+  const renderHashtags = () => {
+    if (!post.hashtags || post.hashtags.length === 0) return null
+
+    return (
+      <div className="mt-2 flex flex-wrap gap-1">
+        {post.hashtags.map((hashtag, index) => (
+          <Link
+            key={index}
+            href={`/hashtag/${hashtag.name}`}
+            className="text-blue-500 hover:text-blue-600 hover:underline font-medium"
+          >
+            #{hashtag.name}
+          </Link>
+        ))}
+      </div>
+    )
+  }
+
   const renderMediaGrid = () => {
     if (!post.mediaUrls || post.mediaUrls.length === 0) return null
 
@@ -301,6 +320,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
             {/* Content */}
             <div className="mb-4">
               <p className="text-gray-900 whitespace-pre-wrap">{post.content}</p>
+              {renderHashtags()}
               {renderMediaGrid()}
             </div>
             

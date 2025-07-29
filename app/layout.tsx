@@ -3,8 +3,12 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { ToastContainer } from '@/components/toast'
+import { NotificationProvider } from '@/components/notification-provider'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = {
+  subsets: ['latin'],
+  display: 'swap',
+}
 
 export const metadata: Metadata = {
   title: 'Bluesky Clone',
@@ -20,9 +24,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Providers>
-          <ToastContainer>
-            {children}
-          </ToastContainer>
+          <NotificationProvider>
+            <ToastContainer>
+              {children}
+            </ToastContainer>
+          </NotificationProvider>
         </Providers>
       </body>
     </html>

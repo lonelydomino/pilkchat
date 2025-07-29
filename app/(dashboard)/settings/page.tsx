@@ -162,6 +162,7 @@ export default function SettingsPage() {
                 onRemove={handleImageRemove}
                 currentImage={formData.image}
                 size="lg"
+                variant="default"
                 placeholder="Upload profile picture"
               />
             </div>

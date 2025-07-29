@@ -5,11 +5,11 @@ import { useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { PostCard } from '@/components/post-card'
 import { Button } from '@/components/ui/button'
-import { User, Search, UserPlus, UserCheck, MessageSquare } from 'lucide-react'
+import { User, Search, UserPlus, UserCheck, MessageSquare, Hash } from 'lucide-react'
 import { showToast } from '@/components/toast'
 
 interface SearchResult {
-  type: 'user' | 'post'
+  type: 'user' | 'post' | 'hashtag'
   user?: {
     id: string
     name: string
@@ -28,6 +28,7 @@ interface SearchResult {
       username: string
       image?: string
     }
+    hashtags?: { name: string }[]
     _count: {
       likes: number
       comments: number
@@ -37,9 +38,16 @@ interface SearchResult {
     isReposted: boolean
     isBookmarked?: boolean
   }
+  hashtag?: {
+    id: string
+    name: string
+    _count: {
+      posts: number
+    }
+  }
 }
 
-type SearchType = 'all' | 'users' | 'posts'
+type SearchType = 'all' | 'users' | 'posts' | 'hashtags'
 
 export default function SearchPage() {
   const searchParams = useSearchParams()
@@ -203,6 +211,33 @@ export default function SearchPage() {
     )
   }
 
+  const renderHashtagResult = (hashtag: SearchResult['hashtag']) => {
+    if (!hashtag) return null
+
+    return (
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+              <Hash className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <Link
+                href={`/hashtag/${hashtag.name}`}
+                className="text-lg font-semibold text-gray-900 hover:text-blue-600 hover:underline"
+              >
+                #{hashtag.name}
+              </Link>
+              <p className="text-sm text-gray-500">
+                {hashtag._count.posts} post{hashtag._count.posts !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-2xl mx-auto p-6">
       {/* Search Header */}
@@ -250,6 +285,14 @@ export default function SearchPage() {
             >
               Posts
             </Button>
+            <Button
+              type="button"
+              variant={searchType === 'hashtags' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSearchType('hashtags')}
+            >
+              Hashtags
+            </Button>
           </div>
           
           <Button type="submit" disabled={isLoading} className="w-full">
@@ -295,6 +338,7 @@ export default function SearchPage() {
                 <div key={`${result.type}-${index}`}>
                   {result.type === 'user' && renderUserResult(result.user)}
                   {result.type === 'post' && renderPostResult(result.post)}
+                  {result.type === 'hashtag' && renderHashtagResult(result.hashtag)}
                 </div>
               ))}
             </div>

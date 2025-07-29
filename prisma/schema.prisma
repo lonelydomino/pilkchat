@@ -94,6 +94,7 @@ model Post {
   likes    Like[]
   reposts  Repost[]
   bookmarks Bookmark[]
+  hashtags PostHashtag[]
 
   // Media (for future implementation)
   mediaUrls String[] @default([])
@@ -201,4 +202,30 @@ model Notification {
   relatedCommentId String?
 
   @@map("notifications")
+}
+
+model Hashtag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relationships
+  posts PostHashtag[]
+
+  @@map("hashtags")
+}
+
+model PostHashtag {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  postId String
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  hashtagId String
+  hashtag   Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, hashtagId])
+  @@map("post_hashtags")
 } 

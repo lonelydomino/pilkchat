@@ -69,6 +69,39 @@ export async function GET(request: NextRequest) {
       results.push(...usersWithFollowStatus)
     }
 
+    // Search for hashtags
+    if (type === 'all' || type === 'hashtags') {
+      const hashtags = await prisma.hashtag.findMany({
+        where: {
+          name: { contains: searchTerm, mode: 'insensitive' },
+        },
+        include: {
+          _count: {
+            select: {
+              posts: true,
+            },
+          },
+        },
+        orderBy: {
+          posts: {
+            _count: 'desc',
+          },
+        },
+        take: 10,
+      })
+
+      const hashtagResults = hashtags.map((hashtag) => ({
+        type: 'hashtag' as const,
+        hashtag: {
+          id: hashtag.id,
+          name: hashtag.name,
+          _count: hashtag._count,
+        },
+      }))
+
+      results.push(...hashtagResults)
+    }
+
     // Search for posts
     if (type === 'all' || type === 'posts') {
       const posts = await prisma.post.findMany({
@@ -82,6 +115,11 @@ export async function GET(request: NextRequest) {
               name: true,
               username: true,
               image: true,
+            },
+          },
+          hashtags: {
+            include: {
+              hashtag: true,
             },
           },
           _count: {
@@ -142,6 +180,7 @@ export async function GET(request: NextRequest) {
             type: 'post' as const,
             post: {
               ...post,
+              hashtags: post.hashtags.map(ph => ph.hashtag),
               isLiked,
               isReposted,
               isBookmarked,
@@ -153,10 +192,11 @@ export async function GET(request: NextRequest) {
       results.push(...postsWithInteractions)
     }
 
-    // Sort results: users first, then posts by creation date
+    // Sort results: users first, then hashtags, then posts by creation date
     results.sort((a, b) => {
-      if (a.type === 'user' && b.type === 'post') return -1
-      if (a.type === 'post' && b.type === 'user') return 1
+      if (a.type === 'user' && b.type !== 'user') return -1
+      if (a.type === 'hashtag' && b.type === 'post') return -1
+      if (a.type === 'post' && b.type !== 'post') return 1
       if (a.type === 'post' && b.type === 'post') {
         return new Date(b.post.createdAt).getTime() - new Date(a.post.createdAt).getTime()
       }

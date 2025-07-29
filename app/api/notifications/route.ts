@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
+import { sendNotificationToUser } from './stream/route'
 
 const prisma = new PrismaClient()
 
@@ -16,12 +17,17 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '20')
+    const offset = (page - 1) * limit
+
     const notifications = await prisma.notification.findMany({
       where: {
         userId: session.user.id,
       },
       include: {
-        user: {
+        relatedUser: {
           select: {
             id: true,
             name: true,
@@ -33,50 +39,25 @@ export async function GET(request: NextRequest) {
       orderBy: {
         createdAt: 'desc',
       },
-      take: 50, // Limit to 50 most recent notifications
+      skip: offset,
+      take: limit,
     })
 
-    // Transform notifications to include related data
-    const notificationsWithData = await Promise.all(
-      notifications.map(async (notification) => {
-        let relatedUser = null
-        let relatedPost = null
+    const totalCount = await prisma.notification.count({
+      where: {
+        userId: session.user.id,
+      },
+    })
 
-        if (notification.relatedUserId) {
-          relatedUser = await prisma.user.findUnique({
-            where: { id: notification.relatedUserId },
-            select: {
-              id: true,
-              name: true,
-              username: true,
-              image: true,
-            },
-          })
-        }
-
-        if (notification.relatedPostId) {
-          relatedPost = await prisma.post.findUnique({
-            where: { id: notification.relatedPostId },
-            select: {
-              id: true,
-              content: true,
-            },
-          })
-        }
-
-        return {
-          id: notification.id,
-          type: notification.type,
-          message: notification.message,
-          read: notification.read,
-          createdAt: notification.createdAt,
-          relatedUser,
-          relatedPost,
-        }
-      })
-    )
-
-    return NextResponse.json({ notifications: notificationsWithData })
+    return NextResponse.json({
+      notifications,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    })
   } catch (error) {
     console.error('Error fetching notifications:', error)
     return NextResponse.json(
@@ -88,9 +69,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { type, message, userId, relatedUserId, relatedPostId } = await request.json()
     const session = await getServerSession(authOptions)
-
+    
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -98,13 +78,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const { type, message, userId, relatedUserId, postId } = await request.json()
+
     const notification = await prisma.notification.create({
       data: {
         type,
         message,
         userId,
         relatedUserId,
-        relatedPostId,
+        postId,
+      },
+      include: {
+        relatedUser: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            image: true,
+          },
+        },
+      },
+    })
+
+    // Send real-time notification
+    sendNotificationToUser(userId, {
+      type: 'new_notification',
+      notification: {
+        id: notification.id,
+        type: notification.type,
+        message: notification.message,
+        createdAt: notification.createdAt,
+        read: notification.read,
+        relatedUser: notification.relatedUser,
       },
     })
 

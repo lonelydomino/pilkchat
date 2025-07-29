@@ -5,6 +5,25 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Hashtag utilities
+export function extractHashtags(text: string): string[] {
+  const hashtagRegex = /#[\w\u0590-\u05ff]+/g
+  const matches = text.match(hashtagRegex)
+  if (!matches) return []
+  
+  // Remove the # symbol and return unique hashtags
+  return [...new Set(matches.map(tag => tag.slice(1).toLowerCase()))]
+}
+
+export function formatHashtags(text: string): { text: string; hashtags: string[] } {
+  const hashtags = extractHashtags(text)
+  return { text, hashtags }
+}
+
+export function highlightHashtags(text: string): string {
+  return text.replace(/#[\w\u0590-\u05ff]+/g, '<span class="text-blue-500 font-medium">$&</span>')
+}
+
 export function formatDate(date: Date | string) {
   const d = new Date(date)
   const now = new Date()

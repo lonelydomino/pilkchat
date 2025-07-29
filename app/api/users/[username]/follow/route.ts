@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
+import { sendNotificationToUser } from '../../notifications/stream/route'
 
 const prisma = new PrismaClient()
 
@@ -78,12 +79,30 @@ export async function POST(
       })
 
       // Create notification for the user being followed
-      await prisma.notification.create({
+      const notification = await prisma.notification.create({
         data: {
           type: 'follow',
           message: `${session.user.name} started following you`,
           userId: userToFollow.id,
           relatedUserId: currentUserId,
+        },
+      })
+
+      // Send real-time notification
+      sendNotificationToUser(userToFollow.id, {
+        type: 'new_notification',
+        notification: {
+          id: notification.id,
+          type: notification.type,
+          message: notification.message,
+          createdAt: notification.createdAt,
+          read: notification.read,
+          relatedUser: {
+            id: session.user.id,
+            name: session.user.name,
+            username: session.user.username,
+            image: session.user.image,
+          },
         },
       })
 

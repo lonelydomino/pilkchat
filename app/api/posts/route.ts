@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
+import { extractHashtags } from '@/lib/utils'
 
 const prisma = new PrismaClient()
 
@@ -22,6 +23,11 @@ export async function GET(request: NextRequest) {
             username: true,
             image: true,
           },
+        },
+        hashtags: {
+          include: {
+            hashtag: true
+          }
         },
         _count: {
           select: {
@@ -79,6 +85,7 @@ export async function GET(request: NextRequest) {
 
         return {
           ...post,
+          hashtags: post.hashtags.map(ph => ph.hashtag),
           isLiked,
           isReposted,
           isBookmarked,
@@ -116,6 +123,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Extract hashtags from content
+    const hashtagNames = extractHashtags(content)
+
     // Create the post
     const post = await prisma.post.create({
       data: {
@@ -142,9 +152,36 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Create hashtags and link them to the post
+    if (hashtagNames.length > 0) {
+      await Promise.all(
+        hashtagNames.map(async (hashtagName) => {
+          // Create or find hashtag
+          let hashtag = await prisma.hashtag.findUnique({
+            where: { name: hashtagName }
+          })
+
+          if (!hashtag) {
+            hashtag = await prisma.hashtag.create({
+              data: { name: hashtagName }
+            })
+          }
+
+          // Link hashtag to post
+          await prisma.postHashtag.create({
+            data: {
+              postId: post.id,
+              hashtagId: hashtag.id
+            }
+          })
+        })
+      )
+    }
+
     // Return post with interaction status
     const postWithInteractions = {
       ...post,
+      hashtags: hashtagNames.map(name => ({ name })),
       isLiked: false,
       isReposted: false,
       isBookmarked: false,

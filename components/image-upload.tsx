@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { Camera, X, Upload, Image as ImageIcon } from 'lucide-react'
+import { Camera, X, Upload, Image as ImageIcon, Plus } from 'lucide-react'
 import { showToast } from './toast'
 
 interface ImageUploadProps {
@@ -15,6 +15,7 @@ interface ImageUploadProps {
   maxSize?: number // in MB
   allowedTypes?: string[]
   placeholder?: string
+  variant?: 'default' | 'compact' | 'button'
 }
 
 export function ImageUpload({
@@ -26,7 +27,8 @@ export function ImageUpload({
   aspectRatio = 'square',
   maxSize = 5,
   allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'],
-  placeholder = 'Upload image'
+  placeholder = 'Upload image',
+  variant = 'default'
 }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [preview, setPreview] = useState<string | null>(currentImage || null)
@@ -36,11 +38,11 @@ export function ImageUpload({
   const getSizeClasses = () => {
     switch (size) {
       case 'sm':
-        return 'w-20 h-20'
+        return variant === 'compact' ? 'w-16 h-16' : 'w-20 h-20'
       case 'lg':
         return 'w-32 h-32'
       default:
-        return 'w-24 h-24'
+        return variant === 'compact' ? 'w-20 h-20' : 'w-24 h-24'
     }
   }
 
@@ -147,6 +149,110 @@ export function ImageUpload({
     fileInputRef.current?.click()
   }
 
+  // Compact variant for create post form
+  if (variant === 'compact') {
+    return (
+      <div className={`relative ${className}`}>
+        <div
+          className={`
+            ${getSizeClasses()} ${getAspectRatioClasses()}
+            border border-gray-300 rounded-lg
+            flex items-center justify-center
+            transition-all duration-200
+            ${isDragOver ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400 hover:bg-gray-50'}
+            ${isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+          `}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onClick={!isUploading ? triggerFileInput : undefined}
+        >
+          {preview ? (
+            <div className="relative w-full h-full">
+              <img
+                src={preview}
+                alt="Preview"
+                className="w-full h-full object-cover rounded-lg"
+              />
+              {!isUploading && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleRemove()
+                  }}
+                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="text-center">
+              {isUploading ? (
+                <div className="flex flex-col items-center space-y-1">
+                  <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-xs text-gray-500">Uploading...</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center space-y-1">
+                  <Plus className="w-5 h-5 text-gray-400" />
+                  <p className="text-xs text-gray-500">Add</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={allowedTypes.join(',')}
+          onChange={handleFileInputChange}
+          className="hidden"
+          disabled={isUploading}
+        />
+      </div>
+    )
+  }
+
+  // Button variant for inline use
+  if (variant === 'button') {
+    return (
+      <div className={`relative ${className}`}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={triggerFileInput}
+          disabled={isUploading}
+          className="flex items-center space-x-2"
+        >
+          {isUploading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <span>Uploading...</span>
+            </>
+          ) : (
+            <>
+              <ImageIcon className="w-4 h-4" />
+              <span>{placeholder}</span>
+            </>
+          )}
+        </Button>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={allowedTypes.join(',')}
+          onChange={handleFileInputChange}
+          className="hidden"
+          disabled={isUploading}
+        />
+      </div>
+    )
+  }
+
+  // Default variant (original design)
   return (
     <div className={`relative ${className}`}>
       <div
