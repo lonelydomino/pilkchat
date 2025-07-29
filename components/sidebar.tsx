@@ -21,14 +21,13 @@ const navigation = [
   { name: 'Search', href: '/search', icon: Search },
   { name: 'Notifications', href: '/notifications', icon: Bell },
   { name: 'Messages', href: '/messages', icon: Mail },
-  { name: 'Profile', href: '/profile', icon: User },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [isSigningOut, setIsSigningOut] = useState(false)
 
   const handleSignOut = async () => {
@@ -85,19 +84,31 @@ export function Sidebar() {
 
         {/* User Profile */}
         <div className="mt-8 pt-6 border-t border-gray-200">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-              <User className="w-5 h-5 text-gray-600" />
+          {status === 'loading' ? (
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+              <div className="flex-1 min-w-0">
+                <div className="h-4 bg-gray-200 rounded w-20 mb-1 animate-pulse"></div>
+                <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {session?.user?.name || 'User'}
-              </p>
-              <p className="text-sm text-gray-500 truncate">
-                @{session?.user?.username || 'username'}
-              </p>
-            </div>
-          </div>
+          ) : (
+            <Link href={`/profile/${session?.user?.username || 'username'}`}>
+              <div className="flex items-center space-x-3 mb-4 hover:bg-gray-50 rounded-lg p-2 transition-colors cursor-pointer">
+                <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-gray-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {session?.user?.name || 'User'}
+                  </p>
+                  <p className="text-sm text-gray-500 truncate">
+                    @{session?.user?.username || 'username'}
+                  </p>
+                </div>
+              </div>
+            </Link>
+          )}
           
           <Button 
             variant="ghost" 

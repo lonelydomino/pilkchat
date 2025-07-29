@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PostCard } from '@/components/post-card'
 import { CreatePost } from '@/components/create-post'
 import { Button } from '@/components/ui/button'
@@ -34,12 +34,50 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
+  const fetchPosts = useCallback(async () => {
+    try {
+      const response = await fetch('/api/posts')
+      if (response.ok) {
+        const data = await response.json()
+        setPosts(data.posts)
+      }
+    } catch (error) {
+      console.error('Error fetching posts:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true)
+    await fetchPosts()
+    setIsRefreshing(false)
+  }, [fetchPosts])
+
+  const handlePostCreated = useCallback((newPost: Post) => {
+    setPosts(prev => [newPost, ...prev])
+  }, [])
+
+  const handlePostUpdate = useCallback((postId: string, updates: Partial<Post>) => {
+    setPosts(prev => prev.map(post => 
+      post.id === postId ? { ...post, ...updates } : post
+    ))
+  }, [])
+
+  const handlePostDeleted = useCallback((postId: string) => {
+    setPosts(prev => prev.filter(post => post.id !== postId))
+  }, [])
+
   // Redirect if not authenticated
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login')
     }
   }, [status, router])
+
+  useEffect(() => {
+    fetchPosts()
+  }, [fetchPosts])
 
   // Don't render anything while checking authentication
   if (status === 'loading') {
@@ -70,43 +108,7 @@ export default function DashboardPage() {
     return null
   }
 
-  const fetchPosts = async () => {
-    try {
-      const response = await fetch('/api/posts')
-      if (response.ok) {
-        const data = await response.json()
-        setPosts(data.posts)
-      }
-    } catch (error) {
-      console.error('Error fetching posts:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true)
-    await fetchPosts()
-    setIsRefreshing(false)
-  }
-
-  useEffect(() => {
-    fetchPosts()
-  }, [])
-
-  const handlePostCreated = (newPost: Post) => {
-    setPosts(prev => [newPost, ...prev])
-  }
-
-  const handlePostUpdated = (postId: string, updates: Partial<Post>) => {
-    setPosts(prev => prev.map(post => 
-      post.id === postId ? { ...post, ...updates } : post
-    ))
-  }
-
-  const handlePostDeleted = (postId: string) => {
-    setPosts(prev => prev.filter(post => post.id !== postId))
-  }
 
   if (isLoading) {
     return (
@@ -165,7 +167,7 @@ export default function DashboardPage() {
             <PostCard
               key={post.id}
               post={post}
-              onUpdate={handlePostUpdated}
+              onUpdate={handlePostUpdate}
               onDelete={handlePostDeleted}
             />
           ))

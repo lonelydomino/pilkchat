@@ -1,9 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { User, Heart, MessageCircle, Repeat, MoreHorizontal } from 'lucide-react'
+import { User, Heart, MessageCircle, Repeat, MoreHorizontal, ChevronDown, ChevronUp } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { CommentForm } from './comment-form'
+import { Comment } from './comment'
 
 interface Post {
   id: string
@@ -33,6 +36,9 @@ interface PostCardProps {
 export function PostCard({ post, onUpdate, onDelete }: PostCardProps) {
   const [isLiking, setIsLiking] = useState(false)
   const [isReposting, setIsReposting] = useState(false)
+  const [showComments, setShowComments] = useState(false)
+  const [comments, setComments] = useState<any[]>([])
+  const [isLoadingComments, setIsLoadingComments] = useState(false)
 
   const handleLike = async () => {
     if (isLiking) return
@@ -86,6 +92,48 @@ export function PostCard({ post, onUpdate, onDelete }: PostCardProps) {
     }
   }
 
+  const fetchComments = async () => {
+    setIsLoadingComments(true)
+    try {
+      const response = await fetch(`/api/comments?postId=${post.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setComments(data.comments)
+      }
+    } catch (error) {
+      console.error('Error fetching comments:', error)
+    } finally {
+      setIsLoadingComments(false)
+    }
+  }
+
+  const handleCommentAdded = (newComment: any) => {
+    setComments(prev => [newComment, ...prev])
+    onUpdate(post.id, {
+      _count: { ...post._count, comments: post._count.comments + 1 }
+    })
+  }
+
+  const handleCommentUpdate = (commentId: string, updates: any) => {
+    setComments(prev => prev.map(comment => 
+      comment.id === commentId ? { ...comment, ...updates } : comment
+    ))
+  }
+
+  const handleCommentDelete = (commentId: string) => {
+    setComments(prev => prev.filter(comment => comment.id !== commentId))
+    onUpdate(post.id, {
+      _count: { ...post._count, comments: post._count.comments - 1 }
+    })
+  }
+
+  const handleShowComments = () => {
+    if (!showComments && comments.length === 0) {
+      fetchComments()
+    }
+    setShowComments(!showComments)
+  }
+
   return (
     <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
       <div className="flex space-x-3">
@@ -97,8 +145,12 @@ export function PostCard({ post, onUpdate, onDelete }: PostCardProps) {
           {/* Header */}
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
-              <span className="font-semibold text-gray-900">{post.author.name}</span>
-              <span className="text-gray-500">@{post.author.username}</span>
+              <Link href={`/profile/${post.author.username}`} className="hover:underline">
+                <span className="font-semibold text-gray-900">{post.author.name}</span>
+              </Link>
+              <Link href={`/profile/${post.author.username}`} className="hover:underline">
+                <span className="text-gray-500">@{post.author.username}</span>
+              </Link>
               <span className="text-gray-400">·</span>
               <span className="text-gray-500">{formatDate(post.createdAt)}</span>
             </div>
@@ -117,7 +169,12 @@ export function PostCard({ post, onUpdate, onDelete }: PostCardProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
               {/* Comments */}
-              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-blue-500">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-gray-500 hover:text-blue-500"
+                onClick={handleShowComments}
+              >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 {post._count.comments}
               </Button>
@@ -147,6 +204,55 @@ export function PostCard({ post, onUpdate, onDelete }: PostCardProps) {
               </Button>
             </div>
           </div>
+          
+          {/* Comments Section */}
+          {showComments && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              {/* Comment Form */}
+              <div className="mb-4">
+                <CommentForm
+                  postId={post.id}
+                  onCommentAdded={handleCommentAdded}
+                  placeholder="Write a comment..."
+                />
+              </div>
+              
+              {/* Comments List */}
+              {isLoadingComments ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="flex space-x-3">
+                        <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+                        <div className="flex-1">
+                          <div className="h-3 bg-gray-200 rounded w-24 mb-2"></div>
+                          <div className="h-3 bg-gray-200 rounded w-full mb-1"></div>
+                          <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : comments.length === 0 ? (
+                <div className="text-center py-6 text-gray-500">
+                  <MessageCircle className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">No comments yet. Be the first to comment!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {comments.map((comment) => (
+                    <Comment
+                      key={comment.id}
+                      comment={comment}
+                      onCommentAdded={handleCommentAdded}
+                      onCommentUpdate={handleCommentUpdate}
+                      onCommentDelete={handleCommentDelete}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
