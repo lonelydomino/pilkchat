@@ -2,204 +2,315 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { User, Search, UserPlus, UserCheck } from 'lucide-react'
 import { useSession } from 'next-auth/react'
+import { PostCard } from '@/components/post-card'
+import { Button } from '@/components/ui/button'
+import { User, Search, UserPlus, UserCheck, MessageSquare } from 'lucide-react'
+import { showToast } from '@/components/toast'
 
 interface SearchResult {
-  id: string
-  name: string
-  username: string
-  email: string
-  bio?: string
-  image?: string
-  _count: {
-    posts: number
-    followers: number
-    following: number
+  type: 'user' | 'post'
+  user?: {
+    id: string
+    name: string
+    username: string
+    image?: string
+    bio?: string
+    isFollowing: boolean
   }
-  isFollowing: boolean
+  post?: {
+    id: string
+    content: string
+    createdAt: string
+    author: {
+      id: string
+      name: string
+      username: string
+      image?: string
+    }
+    _count: {
+      likes: number
+      comments: number
+      reposts: number
+    }
+    isLiked: boolean
+    isReposted: boolean
+    isBookmarked?: boolean
+  }
 }
+
+type SearchType = 'all' | 'users' | 'posts'
 
 export default function SearchPage() {
   const searchParams = useSearchParams()
   const { data: session } = useSession()
-  const [query, setQuery] = useState(searchParams.get('q') || '')
-  const [results, setResults] = useState<SearchResult[]>([])
+  const query = searchParams.get('q') || ''
+  
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [isFollowing, setIsFollowing] = useState<string | null>(null)
+  const [searchType, setSearchType] = useState<SearchType>('all')
+  const [searchQuery, setSearchQuery] = useState(query)
 
-  const performSearch = useCallback(async (searchQuery: string) => {
-    if (!searchQuery.trim()) {
-      setResults([])
+  const performSearch = useCallback(async (searchTerm: string, type: SearchType = 'all') => {
+    if (!searchTerm.trim()) {
+      setSearchResults([])
       return
     }
 
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`)
+      const params = new URLSearchParams({
+        q: searchTerm,
+        type: type,
+      })
+      
+      const response = await fetch(`/api/search?${params}`)
       if (response.ok) {
         const data = await response.json()
-        setResults(data.users)
+        setSearchResults(data.results || [])
       }
     } catch (error) {
-      console.error('Error searching users:', error)
+      console.error('Error performing search:', error)
+      showToast('error', 'Failed to perform search')
     } finally {
       setIsLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      performSearch(query)
-    }, 300)
+    if (query) {
+      setSearchQuery(query)
+      performSearch(query, searchType)
+    }
+  }, [query, searchType, performSearch])
 
-    return () => clearTimeout(debounceTimer)
-  }, [query, performSearch])
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    performSearch(searchQuery, searchType)
+  }
 
   const handleFollow = async (userId: string, username: string) => {
-    if (!session?.user?.id) return
-    
-    setIsFollowing(userId)
     try {
       const response = await fetch(`/api/users/${username}/follow`, {
         method: 'POST',
       })
 
       if (response.ok) {
-        setResults(prev => prev.map(user => 
-          user.id === userId 
-            ? { 
-                ...user, 
-                isFollowing: !user.isFollowing,
-                _count: {
-                  ...user._count,
-                  followers: user.isFollowing ? user._count.followers - 1 : user._count.followers + 1
-                }
+        // Update the user's following status in search results
+        setSearchResults(prev => prev.map(result => {
+          if (result.type === 'user' && result.user?.id === userId) {
+            return {
+              ...result,
+              user: {
+                ...result.user!,
+                isFollowing: !result.user.isFollowing
               }
-            : user
-        ))
+            }
+          }
+          return result
+        }))
+        
+        showToast('success', 'Follow status updated')
       }
     } catch (error) {
       console.error('Error following user:', error)
-    } finally {
-      setIsFollowing(null)
+      showToast('error', 'Failed to update follow status')
     }
+  }
+
+  const handlePostUpdate = useCallback((postId: string, updates: any) => {
+    setSearchResults(prev => prev.map(result => {
+      if (result.type === 'post' && result.post?.id === postId) {
+        return {
+          ...result,
+          post: {
+            ...result.post!,
+            ...updates
+          }
+        }
+      }
+      return result
+    }))
+  }, [])
+
+  const handlePostDelete = useCallback((postId: string) => {
+    setSearchResults(prev => prev.filter(result => 
+      !(result.type === 'post' && result.post?.id === postId)
+    ))
+  }, [])
+
+  const renderUserResult = (user: SearchResult['user']) => {
+    if (!user) return null
+
+    return (
+      <div key={user.id} className="bg-white rounded-lg shadow p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden">
+              {user.image ? (
+                <img 
+                  src={user.image} 
+                  alt={`${user.name}'s profile`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-6 h-6 text-gray-600" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-gray-900 truncate">{user.name}</p>
+              <p className="text-sm text-gray-500 truncate">@{user.username}</p>
+              {user.bio && (
+                <p className="text-sm text-gray-600 truncate mt-1">{user.bio}</p>
+              )}
+            </div>
+          </div>
+          {session?.user?.id !== user.id && (
+            <Button
+              variant={user.isFollowing ? "outline" : "default"}
+              size="sm"
+              onClick={() => handleFollow(user.id, user.username)}
+              className="flex items-center space-x-1"
+            >
+              {user.isFollowing ? (
+                <>
+                  <UserCheck className="w-3 h-3" />
+                  <span>Following</span>
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-3 h-3" />
+                  <span>Follow</span>
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  const renderPostResult = (post: SearchResult['post']) => {
+    if (!post) return null
+
+    return (
+      <PostCard
+        key={post.id}
+        post={post}
+        onUpdate={handlePostUpdate}
+        onDelete={handlePostDelete}
+      />
+    )
   }
 
   return (
     <div className="max-w-2xl mx-auto p-6">
+      {/* Search Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Search Users</h1>
-        
-        {/* Search Input */}
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Search</h1>
+        <p className="text-gray-600">Find users and posts</p>
+      </div>
+
+      {/* Search Form */}
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <form onSubmit={handleSearch} className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search for users or posts..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name or username..."
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
+          
+          <div className="flex space-x-2">
+            <Button
+              type="button"
+              variant={searchType === 'all' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSearchType('all')}
+            >
+              All
+            </Button>
+            <Button
+              type="button"
+              variant={searchType === 'users' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSearchType('users')}
+            >
+              Users
+            </Button>
+            <Button
+              type="button"
+              variant={searchType === 'posts' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSearchType('posts')}
+            >
+              Posts
+            </Button>
+          </div>
+          
+          <Button type="submit" disabled={isLoading} className="w-full">
+            <Search className="w-4 h-4 mr-2" />
+            {isLoading ? 'Searching...' : 'Search'}
+          </Button>
+        </form>
       </div>
 
       {/* Search Results */}
-      {isLoading ? (
-        <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow p-4 animate-pulse">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                <div className="flex-1">
-                  <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-24 mb-1"></div>
-                  <div className="h-3 bg-gray-200 rounded w-48"></div>
-                </div>
-                <div className="w-20 h-8 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : query.trim() ? (
-        results.length > 0 ? (
-          <div className="space-y-4">
-            {results.map((user) => (
-              <div key={user.id} className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                      <User className="w-6 h-6 text-gray-600" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="text-lg font-semibold text-gray-900 truncate">
-                          {user.name}
-                        </h3>
-                      </div>
-                      <p className="text-gray-500 text-sm truncate">
-                        @{user.username}
-                      </p>
-                      {user.bio && (
-                        <p className="text-gray-600 text-sm mt-1 line-clamp-2">
-                          {user.bio}
-                        </p>
-                      )}
-                      <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                        <span>{user._count.posts} posts</span>
-                        <span>{user._count.followers} followers</span>
-                        <span>{user._count.following} following</span>
-                      </div>
-                    </div>
+      <div className="space-y-4">
+        {isLoading ? (
+          <div className="animate-pulse space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg shadow p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-24"></div>
                   </div>
-                  
-                  {user.id !== session?.user?.id && (
-                    <Button
-                      variant={user.isFollowing ? "outline" : "default"}
-                      size="sm"
-                      onClick={() => handleFollow(user.id, user.username)}
-                      disabled={isFollowing === user.id}
-                      className="flex items-center space-x-2"
-                    >
-                      {user.isFollowing ? (
-                        <>
-                          <UserCheck className="w-4 h-4" />
-                          <span>Following</span>
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="w-4 h-4" />
-                          <span>Follow</span>
-                        </>
-                      )}
-                    </Button>
-                  )}
                 </div>
               </div>
             ))}
           </div>
-        ) : (
-          <div className="text-center py-12">
-            <Search className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+        ) : searchQuery && searchResults.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow">
+            <div className="text-gray-400 mb-4">
+              <Search className="w-16 h-16 mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No results found</h3>
             <p className="text-gray-500">
-              Try searching with a different name or username.
+              Try adjusting your search terms or search type
             </p>
           </div>
-        )
-      ) : (
-        <div className="text-center py-12">
-          <Search className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Search for users</h3>
-          <p className="text-gray-500">
-            Enter a name or username to find people to follow.
-          </p>
-        </div>
-      )}
+        ) : searchQuery ? (
+          <>
+            <div className="text-sm text-gray-500 mb-4">
+              {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for "{searchQuery}"
+            </div>
+            <div className="space-y-4">
+              {searchResults.map((result, index) => (
+                <div key={`${result.type}-${index}`}>
+                  {result.type === 'user' && renderUserResult(result.user)}
+                  {result.type === 'post' && renderPostResult(result.post)}
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-12 bg-white rounded-lg shadow">
+            <div className="text-gray-400 mb-4">
+              <Search className="w-16 h-16 mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Start searching</h3>
+            <p className="text-gray-500">
+              Enter a search term to find users and posts
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 } 

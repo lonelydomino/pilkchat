@@ -1,149 +1,98 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
-import { User, Camera, Save, Loader2 } from 'lucide-react'
-import { PasswordChange } from '@/components/password-change'
-import { useUserImage } from '@/hooks/useUserImage'
+import { User, Save, Camera, MapPin, Globe, FileText } from 'lucide-react'
+import { showToast } from '@/components/toast'
 
-interface ProfileData {
+interface UserProfile {
+  id: string
   name: string
   username: string
   email: string
-  bio: string
-  location: string
-  website: string
+  bio?: string
+  location?: string
+  website?: string
   image?: string
 }
 
 export default function SettingsPage() {
-  const { data: session, update } = useSession()
-  const { image: userImage } = useUserImage()
-  const [profileData, setProfileData] = useState<ProfileData>({
+  const { data: session } = useSession()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [formData, setFormData] = useState({
     name: '',
     username: '',
-    email: '',
     bio: '',
     location: '',
     website: '',
-    image: '',
   })
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [isUploadingImage, setIsUploadingImage] = useState(false)
-  const [message, setMessage] = useState('')
 
   useEffect(() => {
-    if (session?.user) {
-      setProfileData({
-        name: session.user.name || '',
-        username: session.user.username || '',
-        email: session.user.email || '',
-        bio: '',
-        location: '',
-        website: '',
-        image: userImage || '',
-      })
-      fetchProfileData()
+    if (session?.user?.id) {
+      fetchProfile()
     }
-  }, [session, userImage])
+  }, [session?.user?.id])
 
-  const fetchProfileData = async () => {
+  const fetchProfile = async () => {
     try {
-      const response = await fetch(`/api/users/${session?.user?.username}`)
+      const response = await fetch('/api/users/profile')
       if (response.ok) {
         const data = await response.json()
-        setProfileData(prev => ({
-          ...prev,
+        setProfile(data)
+        setFormData({
+          name: data.name || '',
+          username: data.username || '',
           bio: data.bio || '',
           location: data.location || '',
           website: data.website || '',
-        }))
+        })
       }
     } catch (error) {
-      console.error('Error fetching profile data:', error)
+      console.error('Error fetching profile:', error)
+      showToast('error', 'Failed to load profile')
     } finally {
       setIsLoading(false)
     }
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!profile) return
+
     setIsSaving(true)
-    setMessage('')
-
-    console.log('Submitting profile data:', profileData)
-
     try {
       const response = await fetch('/api/users/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(profileData),
+        body: JSON.stringify(formData),
       })
 
       if (response.ok) {
-        const result = await response.json()
-        console.log('Profile update response:', result)
-        setMessage('Profile updated successfully!')
-        
-        console.log('Profile updated successfully')
+        const updatedProfile = await response.json()
+        setProfile(updatedProfile)
+        showToast('success', 'Profile updated successfully')
       } else {
         const error = await response.json()
-        setMessage(error.error || 'Failed to update profile')
+        showToast('error', error.error || 'Failed to update profile')
       }
     } catch (error) {
       console.error('Error updating profile:', error)
-      setMessage('Failed to update profile')
+      showToast('error', 'Failed to update profile')
     } finally {
       setIsSaving(false)
-    }
-  }
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setMessage('Please select a valid image file')
-      return
-    }
-
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024 // 5MB
-    if (file.size > maxSize) {
-      setMessage('Image file size must be less than 5MB')
-      return
-    }
-
-    setIsUploadingImage(true)
-    setMessage('')
-
-    try {
-      const formData = new FormData()
-      formData.append('image', file)
-
-      const response = await fetch('/api/upload/image', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setProfileData(prev => ({ ...prev, image: data.url }))
-        setMessage('Image uploaded successfully!')
-      } else {
-        const error = await response.json()
-        setMessage(error.error || 'Failed to upload image')
-      }
-    } catch (error) {
-      console.error('Error uploading image:', error)
-      setMessage('Failed to upload image')
-    } finally {
-      setIsUploadingImage(false)
     }
   }
 
@@ -152,14 +101,24 @@ export default function SettingsPage() {
       <div className="max-w-2xl mx-auto p-6">
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-gray-200 rounded w-48"></div>
-          <div className="space-y-4">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-24"></div>
-                <div className="h-10 bg-gray-200 rounded"></div>
-              </div>
-            ))}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="space-y-4">
+              <div className="h-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Profile not found</h2>
+          <p className="text-gray-500">Unable to load your profile information.</p>
         </div>
       </div>
     )
@@ -167,188 +126,177 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
+      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Profile Settings</h1>
-        <p className="text-gray-600">Update your profile information and preferences.</p>
+        <p className="text-gray-600">Update your profile information and preferences</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Profile Picture */}
-        <div className="space-y-4">
-          <label className="block text-sm font-medium text-gray-700">
-            Profile Picture
-          </label>
+      {/* Profile Form */}
+      <div className="bg-white rounded-lg shadow">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Profile Picture */}
           <div className="flex items-center space-x-4">
-            <div className="relative">
-              <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden">
-                {profileData.image ? (
-                  <img 
-                    src={profileData.image} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // Fallback to default icon if image fails to load
-                      const target = e.target as HTMLImageElement
-                      target.style.display = 'none'
-                      target.nextElementSibling?.classList.remove('hidden')
-                    }}
-                  />
-                ) : null}
-                <User className={`w-10 h-10 text-gray-600 ${profileData.image ? 'hidden' : ''}`} />
-              </div>
-              <label className={`absolute bottom-0 right-0 bg-blue-600 text-white p-1 rounded-full cursor-pointer hover:bg-blue-700 ${isUploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                {isUploadingImage ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <Camera className="w-4 h-4" />
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  disabled={isUploadingImage}
+            <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden">
+              {profile.image ? (
+                <img 
+                  src={profile.image} 
+                  alt={`${profile.name}'s profile`}
+                  className="w-full h-full object-cover"
                 />
-              </label>
+              ) : (
+                <User className="w-10 h-10 text-gray-600" />
+              )}
             </div>
             <div>
-              <p className="text-sm text-gray-500">Click the camera icon to upload a new photo</p>
+              <h3 className="text-lg font-medium text-gray-900">Profile Picture</h3>
+              <p className="text-sm text-gray-500">Upload a new profile picture</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                disabled
+              >
+                <Camera className="w-4 h-4 mr-2" />
+                Upload Image
+              </Button>
             </div>
           </div>
-        </div>
 
-        {/* Name */}
-        <div className="space-y-2">
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Name
-          </label>
-          <input
-            type="text"
-            id="name"
-            value={profileData.name}
-            onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            required
-          />
-        </div>
-
-        {/* Username */}
-        <div className="space-y-2">
-          <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-            Username
-          </label>
-          <input
-            type="text"
-            id="username"
-            value={profileData.username}
-            onChange={(e) => setProfileData(prev => ({ ...prev, username: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            required
-          />
-        </div>
-
-        {/* Email */}
-        <div className="space-y-2">
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            value={profileData.email}
-            onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            required
-          />
-        </div>
-
-        {/* Bio */}
-        <div className="space-y-2">
-          <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
-            Bio
-          </label>
-          <textarea
-            id="bio"
-            value={profileData.bio}
-            onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
-            rows={3}
-            maxLength={160}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Tell us about yourself..."
-          />
-          <p className="text-xs text-gray-500">
-            {profileData.bio.length}/160 characters
-          </p>
-        </div>
-
-        {/* Location */}
-        <div className="space-y-2">
-          <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-            Location
-          </label>
-          <input
-            type="text"
-            id="location"
-            value={profileData.location}
-            onChange={(e) => setProfileData(prev => ({ ...prev, location: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="City, Country"
-          />
-        </div>
-
-        {/* Website */}
-        <div className="space-y-2">
-          <label htmlFor="website" className="block text-sm font-medium text-gray-700">
-            Website
-          </label>
-          <input
-            type="url"
-            id="website"
-            value={profileData.website}
-            onChange={(e) => setProfileData(prev => ({ ...prev, website: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="https://example.com"
-          />
-        </div>
-
-        {/* Message */}
-        {message && (
-          <div className={`p-3 rounded-lg ${
-            message.includes('successfully') 
-              ? 'bg-green-50 text-green-800 border border-green-200' 
-              : 'bg-red-50 text-red-800 border border-red-200'
-          }`}>
-            {message}
+          {/* Name */}
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              Display Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter your display name"
+            />
           </div>
-        )}
 
-        {/* Submit Button */}
-        <div className="flex justify-end">
-          <Button
-            type="submit"
-            disabled={isSaving}
-            className="flex items-center space-x-2"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Saving...</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                <span>Save Changes</span>
-              </>
-            )}
-          </Button>
+          {/* Username */}
+          <div>
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+              Username
+            </label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter your username"
+            />
+            <p className="text-xs text-gray-500 mt-1">This will be your unique identifier on the platform</p>
+          </div>
+
+          {/* Bio */}
+          <div>
+            <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-2">
+              Bio
+            </label>
+            <textarea
+              id="bio"
+              name="bio"
+              value={formData.bio}
+              onChange={handleInputChange}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Tell us about yourself..."
+            />
+            <p className="text-xs text-gray-500 mt-1">A short description about yourself (optional)</p>
+          </div>
+
+          {/* Location */}
+          <div>
+            <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+              Location
+            </label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                id="location"
+                name="location"
+                value={formData.location}
+                onChange={handleInputChange}
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter your location"
+              />
+            </div>
+          </div>
+
+          {/* Website */}
+          <div>
+            <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-2">
+              Website
+            </label>
+            <div className="relative">
+              <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="url"
+                id="website"
+                name="website"
+                value={formData.website}
+                onChange={handleInputChange}
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="https://your-website.com"
+              />
+            </div>
+          </div>
+
+          {/* Email (Read-only) */}
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              Email Address
+            </label>
+            <input
+              type="email"
+              id="email"
+              value={profile.email}
+              disabled
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">Email address cannot be changed from this page</p>
+          </div>
+
+          {/* Save Button */}
+          <div className="flex justify-end pt-4 border-t border-gray-200">
+            <Button
+              type="submit"
+              disabled={isSaving}
+              className="flex items-center space-x-2"
+            >
+              <Save className="w-4 h-4" />
+              <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      {/* Additional Settings */}
+      <div className="mt-8 space-y-4">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Account Settings</h3>
+          <div className="space-y-4">
+            <Button variant="outline" className="w-full justify-start">
+              <FileText className="w-4 h-4 mr-2" />
+              Change Password
+            </Button>
+            <Button variant="outline" className="w-full justify-start">
+              <User className="w-4 h-4 mr-2" />
+              Privacy Settings
+            </Button>
+          </div>
         </div>
-      </form>
-
-      {/* Divider */}
-      <div className="border-t border-gray-200 my-8"></div>
-
-      {/* Password Change Section */}
-      <PasswordChange />
+      </div>
     </div>
   )
 } 

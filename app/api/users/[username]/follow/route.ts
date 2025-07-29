@@ -65,7 +65,8 @@ export async function POST(
 
       return NextResponse.json({ 
         success: true, 
-        action: 'unfollowed' 
+        action: 'unfollowed',
+        message: `You unfollowed ${userToFollow.name}`
       })
     } else {
       // Follow
@@ -88,7 +89,8 @@ export async function POST(
 
       return NextResponse.json({ 
         success: true, 
-        action: 'followed' 
+        action: 'followed',
+        message: `You are now following ${userToFollow.name}`
       })
     }
   } catch (error) {
