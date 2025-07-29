@@ -8,12 +8,7 @@ interface Notification {
   message: string
   read: boolean
   createdAt: string
-  relatedUser?: {
-    id: string
-    name: string
-    username: string
-    image?: string
-  }
+  relatedUserId?: string
 }
 
 interface NotificationStreamEvent {
@@ -122,19 +117,7 @@ export function useNotifications() {
                   
                   // Show toast notification
                   const notification = data.notification
-                  let toastMessage = notification.message
-                  
-                  if (notification.type === 'like') {
-                    toastMessage = `${notification.relatedUser?.name} liked your post`
-                  } else if (notification.type === 'comment') {
-                    toastMessage = `${notification.relatedUser?.name} commented on your post`
-                  } else if (notification.type === 'follow') {
-                    toastMessage = `${notification.relatedUser?.name} started following you`
-                  } else if (notification.type === 'repost') {
-                    toastMessage = `${notification.relatedUser?.name} reposted your post`
-                  }
-                  
-                  showToast('info', toastMessage)
+                  showToast('info', notification.message)
                 }
                 break
                 

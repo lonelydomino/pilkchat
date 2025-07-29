@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
-import { sendNotificationToUser } from '../../notifications/stream/route'
+import { sendNotificationToUser } from '../../../notifications/stream/route'
 
 const prisma = new PrismaClient()
 
@@ -97,12 +97,7 @@ export async function POST(
           message: notification.message,
           createdAt: notification.createdAt,
           read: notification.read,
-          relatedUser: {
-            id: session.user.id,
-            name: session.user.name,
-            username: session.user.username,
-            image: session.user.image,
-          },
+          relatedUserId: session.user.id,
         },
       })
 

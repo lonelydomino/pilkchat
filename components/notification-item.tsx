@@ -12,16 +12,8 @@ interface Notification {
   message: string
   read: boolean
   createdAt: string
-  relatedUser?: {
-    id: string
-    name: string
-    username: string
-    image?: string
-  }
-  relatedPost?: {
-    id: string
-    content: string
-  }
+  relatedUserId?: string
+  relatedPostId?: string
 }
 
 interface NotificationItemProps {
@@ -92,11 +84,7 @@ export function NotificationItem({ notification, onMarkAsRead, onDelete }: Notif
       <div className="flex items-start space-x-3">
         <div className="flex-shrink-0">
           <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-            {notification.relatedUser ? (
-              <User className="w-4 h-4 text-gray-600" />
-            ) : (
-              getIcon()
-            )}
+            {getIcon()}
           </div>
         </div>
         

@@ -11,16 +11,8 @@ interface Notification {
   message: string
   read: boolean
   createdAt: string
-  relatedUser?: {
-    id: string
-    name: string
-    username: string
-    image?: string
-  }
-  relatedPost?: {
-    id: string
-    content: string
-  }
+  relatedUserId?: string
+  relatedPostId?: string
 }
 
 export default function NotificationsPage() {

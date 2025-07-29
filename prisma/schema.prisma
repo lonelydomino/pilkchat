@@ -68,6 +68,10 @@ model User {
   // Notifications
   notifications Notification[]
 
+  // Messaging
+  conversations ConversationParticipant[]
+  messages     Message[]
+
   @@map("users")
 }
 
@@ -228,4 +232,56 @@ model PostHashtag {
 
   @@unique([postId, hashtagId])
   @@map("post_hashtags")
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Participants
+  participants ConversationParticipant[]
+  messages    Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Track if user has left the conversation
+  leftAt DateTime?
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Message can be text, image, or other types
+  type String @default("text") // "text", "image", "file"
+
+  // Sender
+  senderId String
+  sender   User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  // Conversation
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // Message status
+  readAt DateTime?
+
+  @@map("messages")
 } 

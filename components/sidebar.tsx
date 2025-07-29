@@ -14,7 +14,8 @@ import {
   Settings, 
   LogOut,
   Users,
-  TrendingUp
+  TrendingUp,
+  MessageSquare
 } from 'lucide-react'
 import { useNotifications } from '@/hooks/useNotifications'
 
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'Home', href: '/dashboard', icon: Home },
   { name: 'Explore', href: '/explore', icon: TrendingUp },
   { name: 'Search', href: '/search', icon: Search },
+  { name: 'Messages', href: '/messages', icon: MessageSquare },
   { name: 'Notifications', href: '/notifications', icon: Bell, showCount: true },
   { name: 'Bookmarks', href: '/bookmarks', icon: Bookmark, showCount: true },
   { name: 'Profile', href: '/profile', icon: User },

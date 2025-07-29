@@ -83,7 +83,7 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto">
         <div className="animate-pulse space-y-6">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="space-y-4">

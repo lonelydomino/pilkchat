@@ -93,12 +93,7 @@ export async function POST(
             message: notification.message,
             createdAt: notification.createdAt,
             read: notification.read,
-            relatedUser: {
-              id: session.user.id,
-              name: session.user.name,
-              username: session.user.username,
-              image: session.user.image,
-            },
+            relatedUserId: session.user.id,
           },
         })
       }

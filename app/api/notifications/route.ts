@@ -26,16 +26,6 @@ export async function GET(request: NextRequest) {
       where: {
         userId: session.user.id,
       },
-      include: {
-        relatedUser: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            image: true,
-          },
-        },
-      },
       orderBy: {
         createdAt: 'desc',
       },
@@ -86,17 +76,7 @@ export async function POST(request: NextRequest) {
         message,
         userId,
         relatedUserId,
-        postId,
-      },
-      include: {
-        relatedUser: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            image: true,
-          },
-        },
+        relatedPostId: postId,
       },
     })
 
@@ -109,7 +89,7 @@ export async function POST(request: NextRequest) {
         message: notification.message,
         createdAt: notification.createdAt,
         read: notification.read,
-        relatedUser: notification.relatedUser,
+        relatedUserId: notification.relatedUserId,
       },
     })
 
