@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
+import { writeFile, mkdir } from 'fs/promises'
+import { join } from 'path'
+import { existsSync } from 'fs'
+
+// Configure upload settings
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads')
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,34 +32,46 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
+    if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { error: 'File must be an image' },
+        { error: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.' },
         { status: 400 }
       )
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024 // 5MB
-    if (file.size > maxSize) {
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: 'Image file size must be less than 5MB' },
+        { error: 'File size too large. Maximum size is 5MB.' },
         { status: 400 }
       )
     }
 
-    // Convert file to base64 for storage
+    // Create upload directory if it doesn't exist
+    if (!existsSync(UPLOAD_DIR)) {
+      await mkdir(UPLOAD_DIR, { recursive: true })
+    }
+
+    // Generate unique filename
+    const timestamp = Date.now()
+    const randomString = Math.random().toString(36).substring(2, 15)
+    const fileExtension = file.name.split('.').pop()
+    const fileName = `${session.user.id}_${timestamp}_${randomString}.${fileExtension}`
+    const filePath = join(UPLOAD_DIR, fileName)
+
+    // Convert file to buffer and save
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    const base64 = buffer.toString('base64')
-    const dataUrl = `data:${file.type};base64,${base64}`
+    
+    await writeFile(filePath, buffer)
 
-    // For now, we'll return the data URL
-    // In a production app, you'd upload to a service like Cloudinary, AWS S3, etc.
+    // Return the public URL
+    const publicUrl = `/uploads/${fileName}`
+
     return NextResponse.json({
       success: true,
-      url: dataUrl,
-      filename: file.name,
+      url: publicUrl,
+      fileName: fileName,
       size: file.size,
       type: file.type
     })
@@ -63,4 +83,11 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+export async function GET() {
+  return NextResponse.json(
+    { error: 'Method not allowed' },
+    { status: 405 }
+  )
 } 

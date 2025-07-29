@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { User, MapPin, Globe, Calendar, Users, UserPlus, UserCheck, MessageSquare, Heart } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { showToast } from '@/components/toast'
+import { ImageModal } from '@/components/image-modal'
 
 interface UserProfile {
   id: string
@@ -45,6 +46,7 @@ interface Post {
   }
   isLiked: boolean
   isReposted: boolean
+  images?: string[]
 }
 
 interface UserListItem {
@@ -72,6 +74,9 @@ export default function ProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false)
   const [isUpdatingFollow, setIsUpdatingFollow] = useState(false)
   const [isLoadingTab, setIsLoadingTab] = useState(false)
+  const [imageModalOpen, setImageModalOpen] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [currentPostImages, setCurrentPostImages] = useState<string[]>([])
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -209,6 +214,20 @@ export default function ProfilePage() {
     }
   }, [])
 
+  const handleImageClick = (images: string[], index: number) => {
+    setCurrentPostImages(images)
+    setCurrentImageIndex(index)
+    setImageModalOpen(true)
+  }
+
+  const handleImageModalClose = () => {
+    setImageModalOpen(false)
+  }
+
+  const handleImageModalNavigate = (index: number) => {
+    setCurrentImageIndex(index)
+  }
+
   if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto p-6">
@@ -267,6 +286,7 @@ export default function ProfilePage() {
                   post={post}
                   onUpdate={handlePostUpdate}
                   onDelete={handlePostDelete}
+                  onImageClick={handleImageClick}
                 />
               ))
             )}
@@ -445,128 +465,141 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      {/* Profile Header */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="flex items-start space-x-4 mb-6">
-          <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {profile.image ? (
-              <img 
-                src={profile.image} 
-                alt={`${profile.name}'s profile`}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <User className="w-10 h-10 text-gray-600" />
-            )}
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{profile.name}</h1>
-                <p className="text-gray-500">@{profile.username}</p>
-              </div>
-              
-              {!profile.isOwnProfile && (
-                <Button
-                  onClick={handleFollow}
-                  disabled={isUpdatingFollow}
-                  variant={isFollowing ? "outline" : "default"}
-                  className="flex items-center space-x-2"
-                >
-                  {isFollowing ? (
-                    <>
-                      <UserCheck className="w-4 h-4" />
-                      <span>Following</span>
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="w-4 h-4" />
-                      <span>Follow</span>
-                    </>
-                  )}
-                </Button>
+    <>
+      <div className="max-w-2xl mx-auto p-6">
+        {/* Profile Header */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="flex items-start space-x-4 mb-6">
+            <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {profile.image ? (
+                <img 
+                  src={profile.image} 
+                  alt={`${profile.name}'s profile`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-10 h-10 text-gray-600" />
               )}
             </div>
             
-            {profile.bio && (
-              <p className="text-gray-700 mb-4">{profile.bio}</p>
-            )}
-            
-            <div className="flex items-center space-x-6 text-sm text-gray-500 mb-4">
-              {profile.location && (
-                <div className="flex items-center space-x-1">
-                  <MapPin className="w-4 h-4" />
-                  <span>{profile.location}</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{profile.name}</h1>
+                  <p className="text-gray-500">@{profile.username}</p>
                 </div>
-              )}
-              
-              {profile.website && (
-                <div className="flex items-center space-x-1">
-                  <Globe className="w-4 h-4" />
-                  <a 
-                    href={profile.website} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="hover:text-blue-600"
+                
+                {!profile.isOwnProfile && (
+                  <Button
+                    onClick={handleFollow}
+                    disabled={isUpdatingFollow}
+                    variant={isFollowing ? "outline" : "default"}
+                    className="flex items-center space-x-2"
                   >
-                    {profile.website}
-                  </a>
-                </div>
+                    {isFollowing ? (
+                      <>
+                        <UserCheck className="w-4 h-4" />
+                        <span>Following</span>
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="w-4 h-4" />
+                        <span>Follow</span>
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+              
+              {profile.bio && (
+                <p className="text-gray-700 mb-4">{profile.bio}</p>
               )}
               
-              <div className="flex items-center space-x-1">
-                <Calendar className="w-4 h-4" />
-                <span>Joined {formatDate(profile.createdAt)}</span>
+              <div className="flex items-center space-x-6 text-sm text-gray-500 mb-4">
+                {profile.location && (
+                  <div className="flex items-center space-x-1">
+                    <MapPin className="w-4 h-4" />
+                    <span>{profile.location}</span>
+                  </div>
+                )}
+                
+                {profile.website && (
+                  <div className="flex items-center space-x-1">
+                    <Globe className="w-4 h-4" />
+                    <a 
+                      href={profile.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="hover:text-blue-600"
+                    >
+                      {profile.website}
+                    </a>
+                  </div>
+                )}
+                
+                <div className="flex items-center space-x-1">
+                  <Calendar className="w-4 h-4" />
+                  <span>Joined {formatDate(profile.createdAt)}</span>
+                </div>
               </div>
-            </div>
-            
-            <div className="flex items-center space-x-6">
-              <button
-                onClick={() => setActiveTab('posts')}
-                className={`flex items-center space-x-1 ${
-                  activeTab === 'posts' ? 'text-blue-600' : 'text-gray-500'
-                }`}
-              >
-                <span className="font-semibold">{profile._count.posts}</span>
-                <span>posts</span>
-              </button>
               
-              <button
-                onClick={() => setActiveTab('followers')}
-                className={`flex items-center space-x-1 ${
-                  activeTab === 'followers' ? 'text-blue-600' : 'text-gray-500'
-                }`}
-              >
-                <span className="font-semibold">{profile._count.followers}</span>
-                <span>followers</span>
-              </button>
-              
-              <button
-                onClick={() => setActiveTab('following')}
-                className={`flex items-center space-x-1 ${
-                  activeTab === 'following' ? 'text-blue-600' : 'text-gray-500'
-                }`}
-              >
-                <span className="font-semibold">{profile._count.following}</span>
-                <span>following</span>
-              </button>
+              <div className="flex items-center space-x-6">
+                <button
+                  onClick={() => setActiveTab('posts')}
+                  className={`flex items-center space-x-1 ${
+                    activeTab === 'posts' ? 'text-blue-600' : 'text-gray-500'
+                  }`}
+                >
+                  <span className="font-semibold">{profile._count.posts}</span>
+                  <span>posts</span>
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab('followers')}
+                  className={`flex items-center space-x-1 ${
+                    activeTab === 'followers' ? 'text-blue-600' : 'text-gray-500'
+                  }`}
+                >
+                  <span className="font-semibold">{profile._count.followers}</span>
+                  <span>followers</span>
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab('following')}
+                  className={`flex items-center space-x-1 ${
+                    activeTab === 'following' ? 'text-blue-600' : 'text-gray-500'
+                  }`}
+                >
+                  <span className="font-semibold">{profile._count.following}</span>
+                  <span>following</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Tab Content */}
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4 capitalize">
+            {activeTab === 'posts' && 'Posts'}
+            {activeTab === 'followers' && 'Followers'}
+            {activeTab === 'following' && 'Following'}
+          </h2>
+          
+          {renderTabContent()}
+        </div>
       </div>
 
-      {/* Tab Content */}
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4 capitalize">
-          {activeTab === 'posts' && 'Posts'}
-          {activeTab === 'followers' && 'Followers'}
-          {activeTab === 'following' && 'Following'}
-        </h2>
-        
-        {renderTabContent()}
-      </div>
-    </div>
+      {/* Image Modal */}
+      {currentPostImages.length > 0 && (
+        <ImageModal
+          images={currentPostImages}
+          currentIndex={currentImageIndex}
+          isOpen={imageModalOpen}
+          onClose={handleImageModalClose}
+          onNavigate={handleImageModalNavigate}
+        />
+      )}
+    </>
   )
 } 

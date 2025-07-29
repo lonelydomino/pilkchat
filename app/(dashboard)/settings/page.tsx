@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { User, Save, Camera, MapPin, Globe, FileText } from 'lucide-react'
 import { showToast } from '@/components/toast'
+import { ImageUpload } from '@/components/image-upload'
 
 interface UserProfile {
   id: string
@@ -28,6 +29,7 @@ export default function SettingsPage() {
     bio: '',
     location: '',
     website: '',
+    image: '',
   })
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export default function SettingsPage() {
           bio: data.bio || '',
           location: data.location || '',
           website: data.website || '',
+          image: data.image || '',
         })
       }
     } catch (error) {
@@ -63,6 +66,20 @@ export default function SettingsPage() {
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }))
+  }
+
+  const handleImageUpload = (url: string) => {
+    setFormData(prev => ({
+      ...prev,
+      image: url
+    }))
+  }
+
+  const handleImageRemove = () => {
+    setFormData(prev => ({
+      ...prev,
+      image: ''
     }))
   }
 
@@ -136,31 +153,17 @@ export default function SettingsPage() {
       <div className="bg-white rounded-lg shadow">
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Profile Picture */}
-          <div className="flex items-center space-x-4">
-            <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden">
-              {profile.image ? (
-                <img 
-                  src={profile.image} 
-                  alt={`${profile.name}'s profile`}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User className="w-10 h-10 text-gray-600" />
-              )}
-            </div>
+          <div className="flex items-start space-x-4">
             <div>
-              <h3 className="text-lg font-medium text-gray-900">Profile Picture</h3>
-              <p className="text-sm text-gray-500">Upload a new profile picture</p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="mt-2"
-                disabled
-              >
-                <Camera className="w-4 h-4 mr-2" />
-                Upload Image
-              </Button>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Profile Picture</h3>
+              <p className="text-sm text-gray-500 mb-4">Upload a new profile picture</p>
+              <ImageUpload
+                onUpload={handleImageUpload}
+                onRemove={handleImageRemove}
+                currentImage={formData.image}
+                size="lg"
+                placeholder="Upload profile picture"
+              />
             </div>
           </div>
 

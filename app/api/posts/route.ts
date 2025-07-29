@@ -5,9 +5,15 @@ import { authOptions } from '@/auth'
 
 const prisma = new PrismaClient()
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+    const currentUserId = session?.user?.id
+
     const posts = await prisma.post.findMany({
+      where: {
+        published: true,
+      },
       include: {
         author: {
           select: {
@@ -28,46 +34,57 @@ export async function GET() {
       orderBy: {
         createdAt: 'desc',
       },
+      take: 50,
     })
 
-    // Get current user from session
-    const session = await getServerSession(authOptions)
-    
-    // Add interaction data for each post
-    const postsWithInteractions = await Promise.all(posts.map(async (post) => {
-      let isLiked = false
-      let isReposted = false
-      
-      if (session?.user?.id) {
-        // Check if current user liked this post
-        const like = await prisma.like.findUnique({
-          where: {
-            userId_postId: {
-              userId: session.user.id,
-              postId: post.id,
-            },
-          },
-        })
-        isLiked = !!like
-        
-        // Check if current user reposted this post
-        const repost = await prisma.repost.findUnique({
-          where: {
-            userId_postId: {
-              userId: session.user.id,
-              postId: post.id,
-            },
-          },
-        })
-        isReposted = !!repost
-      }
-      
-      return {
-        ...post,
-        isLiked,
-        isReposted,
-      }
-    }))
+    // Check interaction status for each post
+    const postsWithInteractions = await Promise.all(
+      posts.map(async (post) => {
+        let isLiked = false
+        let isReposted = false
+        let isBookmarked = false
+
+        if (currentUserId) {
+          const [like, repost, bookmark] = await Promise.all([
+            prisma.like.findUnique({
+              where: {
+                userId_postId: {
+                  userId: currentUserId,
+                  postId: post.id,
+                },
+              },
+            }),
+            prisma.repost.findUnique({
+              where: {
+                userId_postId: {
+                  userId: currentUserId,
+                  postId: post.id,
+                },
+              },
+            }),
+            prisma.bookmark.findUnique({
+              where: {
+                userId_postId: {
+                  userId: currentUserId,
+                  postId: post.id,
+                },
+              },
+            }),
+          ])
+
+          isLiked = !!like
+          isReposted = !!repost
+          isBookmarked = !!bookmark
+        }
+
+        return {
+          ...post,
+          isLiked,
+          isReposted,
+          isBookmarked,
+        }
+      })
+    )
 
     return NextResponse.json({ posts: postsWithInteractions })
   } catch (error) {
@@ -81,29 +98,30 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { content } = await request.json()
-
-    if (!content || content.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Content is required' },
-        { status: 400 }
-      )
-    }
-
-    // Get user from session
     const session = await getServerSession(authOptions)
+    
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
     }
-    const authorId = session.user.id
 
+    const { content, mediaUrls = [] } = await request.json()
+
+    if (!content?.trim() && mediaUrls.length === 0) {
+      return NextResponse.json(
+        { error: 'Post content or media is required' },
+        { status: 400 }
+      )
+    }
+
+    // Create the post
     const post = await prisma.post.create({
       data: {
-        content: content.trim(),
-        authorId: authorId,
+        content: content?.trim() || '',
+        authorId: session.user.id,
+        mediaUrls: mediaUrls,
       },
       include: {
         author: {
@@ -124,11 +142,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({
+    // Return post with interaction status
+    const postWithInteractions = {
       ...post,
       isLiked: false,
       isReposted: false,
-    })
+      isBookmarked: false,
+    }
+
+    return NextResponse.json(postWithInteractions)
   } catch (error) {
     console.error('Error creating post:', error)
     return NextResponse.json(

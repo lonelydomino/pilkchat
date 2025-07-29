@@ -59,7 +59,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const { name, username, bio, location, website } = await request.json()
+    const { name, username, bio, location, website, image } = await request.json()
 
     // Validate required fields
     if (!name || !username) {
@@ -93,6 +93,7 @@ export async function PUT(request: NextRequest) {
         bio: bio || null,
         location: location || null,
         website: website || null,
+        image: image || null,
       },
       select: {
         id: true,
