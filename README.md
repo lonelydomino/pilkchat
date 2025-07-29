@@ -14,6 +14,7 @@ A modern, decentralized social media platform built with Next.js, TypeScript, an
 - 📱 Responsive design
 - 🔍 Search functionality
 - 🏷️ Hashtags and mentions
+- 🔖 **Bookmarks system** - Save and organize posts for later reading
 
 ## Tech Stack
 
@@ -88,17 +89,41 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 ├── components/            # Reusable components
 ├── lib/                   # Utility functions
 ├── prisma/               # Database schema
-├── types/                # TypeScript types
-└── hooks/                # Custom React hooks
+└── types/                # TypeScript types
 ```
 
-## Development
+## Bookmarks Feature
+
+The bookmarks system allows users to:
+
+- **Save posts** by clicking the bookmark icon on any post
+- **View saved posts** in a dedicated bookmarks page
+- **Remove bookmarks** by clicking the bookmark icon again
+- **See bookmark count** in the sidebar navigation
+- **Get notifications** when bookmarking/unbookmarking posts
+- **Refresh bookmarks** to see the latest saved posts
+
+### API Endpoints
+
+- `GET /api/bookmarks` - Fetch user's bookmarked posts
+- `POST /api/posts/[id]/bookmark` - Toggle bookmark status
+
+### Components
+
+- `BookmarksPage` - Main bookmarks page with loading states and error handling
+- `PostCard` - Enhanced with bookmark functionality
+- `ToastContainer` - Toast notifications for user feedback
+- `Sidebar` - Shows bookmark count in navigation
+
+## Development Commands
 
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
-- `npm run db:studio` - Open Prisma Studio
+- `npx prisma studio` - Open Prisma Studio (database GUI)
+- `npx prisma db push` - Push schema changes to database
+- `npx prisma generate` - Generate Prisma client
 
 ## Contributing
 
@@ -110,4 +135,4 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 ## License
 
-MIT License - see LICENSE file for details # pilkchat
+MIT License - see LICENSE file for details

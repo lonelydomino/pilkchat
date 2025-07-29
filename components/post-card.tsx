@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { User, Heart, MessageCircle, Repeat, MoreHorizontal, ChevronDown, ChevronUp } from 'lucide-react'
+import { User, Heart, MessageCircle, Repeat, MoreHorizontal, ChevronDown, ChevronUp, Bookmark } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { CommentForm } from './comment-form'
 import { Comment } from './comment'
+import { showToast } from './toast'
 
 interface Post {
   id: string
@@ -25,6 +26,7 @@ interface Post {
   }
   isLiked: boolean
   isReposted: boolean
+  isBookmarked?: boolean
 }
 
 interface PostCardProps {
@@ -36,6 +38,7 @@ interface PostCardProps {
 export function PostCard({ post, onUpdate, onDelete }: PostCardProps) {
   const [isLiking, setIsLiking] = useState(false)
   const [isReposting, setIsReposting] = useState(false)
+  const [isBookmarking, setIsBookmarking] = useState(false)
   const [showComments, setShowComments] = useState(false)
   const [comments, setComments] = useState<any[]>([])
   const [isLoadingComments, setIsLoadingComments] = useState(false)
@@ -89,6 +92,36 @@ export function PostCard({ post, onUpdate, onDelete }: PostCardProps) {
       console.error('Error reposting:', error)
     } finally {
       setIsReposting(false)
+    }
+  }
+
+  const handleBookmark = async () => {
+    if (isBookmarking) return
+    
+    setIsBookmarking(true)
+    try {
+      const response = await fetch(`/api/posts/${post.id}/bookmark`, {
+        method: 'POST',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        onUpdate(post.id, { isBookmarked: data.bookmarked })
+        
+        // Show toast notification
+        if (data.bookmarked) {
+          showToast('success', 'Post added to bookmarks')
+        } else {
+          showToast('info', 'Post removed from bookmarks')
+        }
+      } else {
+        showToast('error', 'Failed to update bookmark')
+      }
+    } catch (error) {
+      console.error('Error bookmarking:', error)
+      showToast('error', 'Failed to update bookmark')
+    } finally {
+      setIsBookmarking(false)
     }
   }
 
@@ -209,6 +242,17 @@ export function PostCard({ post, onUpdate, onDelete }: PostCardProps) {
               >
                 <Heart className={`w-4 h-4 mr-2 ${post.isLiked ? 'fill-current' : ''}`} />
                 {post._count.likes}
+              </Button>
+              
+              {/* Bookmark */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={`hover:text-yellow-500 ${post.isBookmarked ? 'text-yellow-500' : 'text-gray-500'}`}
+                onClick={handleBookmark}
+                disabled={isBookmarking}
+              >
+                <Bookmark className={`w-4 h-4 ${post.isBookmarked ? 'fill-current' : ''}`} />
               </Button>
             </div>
           </div>

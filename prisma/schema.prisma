@@ -59,6 +59,7 @@ model User {
   comments  Comment[]
   likes     Like[]
   reposts   Repost[]
+  bookmarks Bookmark[]
   
   // Follow relationships
   followers Follows[] @relation("UserFollowers")
@@ -92,6 +93,7 @@ model Post {
   comments Comment[]
   likes    Like[]
   reposts  Repost[]
+  bookmarks Bookmark[]
 
   // Media (for future implementation)
   mediaUrls String[] @default([])
@@ -153,6 +155,20 @@ model Repost {
 
   @@unique([userId, postId])
   @@map("reposts")
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  postId String
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("bookmarks")
 }
 
 model Follows {

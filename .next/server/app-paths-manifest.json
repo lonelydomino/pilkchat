@@ -1,11 +1,12 @@
 {
   "/api/notifications/unread-count/route": "app/api/notifications/unread-count/route.js",
-  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/api/bookmarks/route": "app/api/bookmarks/route.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/topics/trending/route": "app/api/topics/trending/route.js",
   "/api/posts/route": "app/api/posts/route.js",
+  "/api/debug/user/route": "app/api/debug/user/route.js",
   "/api/users/[username]/route": "app/api/users/[username]/route.js",
-  "/(dashboard)/settings/page": "app/(dashboard)/settings/page.js",
+  "/api/posts/[id]/bookmark/route": "app/api/posts/[id]/bookmark/route.js",
   "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
-  "/(dashboard)/profile/[username]/page": "app/(dashboard)/profile/[username]/page.js",
-  "/(dashboard)/debug/page": "app/(dashboard)/debug/page.js"
+  "/(dashboard)/bookmarks/page": "app/(dashboard)/bookmarks/page.js"
 }
