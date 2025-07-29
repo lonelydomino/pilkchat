@@ -1,16 +1,19 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Search, Bell, User } from 'lucide-react'
 
 export function Header() {
   const [searchQuery, setSearchQuery] = useState('')
+  const router = useRouter()
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle search
-    console.log('Searching for:', searchQuery)
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+    }
   }
 
   return (

@@ -1,12 +1,9 @@
 {
   "/(auth)/login/page": "app/(auth)/login/page.js",
   "/page": "app/page.js",
-  "/api/users/[username]/posts/route": "app/api/users/[username]/posts/route.js",
-  "/api/users/[username]/route": "app/api/users/[username]/route.js",
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/comments/route": "app/api/comments/route.js",
-  "/api/posts/[id]/like/route": "app/api/posts/[id]/like/route.js",
   "/api/posts/route": "app/api/posts/route.js",
+  "/api/search/route": "app/api/search/route.js",
   "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
-  "/(dashboard)/profile/[username]/page": "app/(dashboard)/profile/[username]/page.js"
+  "/(dashboard)/profile/[username]/page": "app/(dashboard)/profile/[username]/page.js",
+  "/(dashboard)/search/page": "app/(dashboard)/search/page.js"
 }
