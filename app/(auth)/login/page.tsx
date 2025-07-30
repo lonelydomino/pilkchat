@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { signIn } from 'next-auth/react'
+import { signIn, useSession } from 'next-auth/react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -14,6 +14,14 @@ export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
+  const { data: session, status } = useSession()
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (status === 'authenticated' && session) {
+      router.push(callbackUrl)
+    }
+  }, [session, status, router, callbackUrl])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,14 +37,29 @@ export default function LoginPage() {
 
       if (result?.error) {
         setError('Invalid email or password')
-      } else {
-        router.push(callbackUrl)
+      } else if (result?.ok) {
+        // Wait a moment for the session to be established
+        setTimeout(() => {
+          router.push(callbackUrl)
+        }, 100)
       }
     } catch (error) {
       setError('An error occurred. Please try again.')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Show loading while checking session
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
