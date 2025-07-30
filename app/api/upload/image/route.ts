@@ -13,27 +13,36 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'im
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Image upload request started')
+    
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
+      console.log('No session or user ID found')
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
+    console.log('User authenticated:', session.user.id)
+
     const formData = await request.formData()
     const file = formData.get('image') as File
 
     if (!file) {
+      console.log('No image file provided')
       return NextResponse.json(
         { error: 'No image file provided' },
         { status: 400 }
       )
     }
 
+    console.log('File received:', file.name, file.type, file.size)
+
     // Validate file type
     if (!ALLOWED_TYPES.includes(file.type)) {
+      console.log('Invalid file type:', file.type)
       return NextResponse.json(
         { error: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.' },
         { status: 400 }
@@ -42,11 +51,31 @@ export async function POST(request: NextRequest) {
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
+      console.log('File too large:', file.size)
       return NextResponse.json(
         { error: 'File size too large. Maximum size is 5MB.' },
         { status: 400 }
       )
     }
+
+    // Check if Cloudinary credentials are available
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME
+    const apiKey = process.env.CLOUDINARY_API_KEY
+    const apiSecret = process.env.CLOUDINARY_API_SECRET
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      console.error('Missing Cloudinary credentials:', {
+        cloudName: !!cloudName,
+        apiKey: !!apiKey,
+        apiSecret: !!apiSecret
+      })
+      return NextResponse.json(
+        { error: 'Image upload service not configured' },
+        { status: 500 }
+      )
+    }
+
+    console.log('Cloudinary credentials found, proceeding with upload')
 
     // Convert file to buffer
     const bytes = await file.arrayBuffer()
@@ -55,14 +84,17 @@ export async function POST(request: NextRequest) {
     // Generate unique filename for Cloudinary
     const timestamp = Date.now()
     const randomString = Math.random().toString(36).substring(2, 15)
-    const fileExtension = file.name.split('.').pop()
     const fileName = `${session.user.id}_${timestamp}_${randomString}`
+
+    console.log('Uploading to Cloudinary with filename:', fileName)
 
     // Upload to Cloudinary
     const cloudinaryResult = await uploadImageToCloudinary(buffer, fileName, {
       folder: 'pilkchat',
       public_id: fileName,
     })
+
+    console.log('Cloudinary upload successful:', cloudinaryResult.url)
 
     // Store image info in database (optional)
     try {
@@ -74,6 +106,7 @@ export async function POST(request: NextRequest) {
           }
         })
       }, 3, 200)
+      console.log('User image updated in database')
     } catch (dbError) {
       console.warn('Failed to update user image in database:', dbError)
       // Don't fail the upload if database update fails
@@ -94,7 +127,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error uploading image:', error)
     return NextResponse.json(
-      { error: 'Failed to upload image' },
+      { error: 'Failed to upload image', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   } finally {

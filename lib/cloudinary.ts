@@ -1,10 +1,19 @@
 import { v2 as cloudinary } from 'cloudinary'
 
+// Validate Cloudinary configuration
+const cloudName = process.env.CLOUDINARY_CLOUD_NAME
+const apiKey = process.env.CLOUDINARY_API_KEY
+const apiSecret = process.env.CLOUDINARY_API_SECRET
+
+if (!cloudName || !apiKey || !apiSecret) {
+  console.warn('Missing Cloudinary credentials. Image uploads will not work.')
+}
+
 // Configure Cloudinary
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: cloudName,
+  api_key: apiKey,
+  api_secret: apiSecret,
 })
 
 // Helper function to upload image to Cloudinary
@@ -25,6 +34,11 @@ export async function uploadImageToCloudinary(
   format: string
 }> {
   return new Promise((resolve, reject) => {
+    if (!cloudName || !apiKey || !apiSecret) {
+      reject(new Error('Cloudinary credentials not configured'))
+      return
+    }
+
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder: options.folder || 'pilkchat',
@@ -61,6 +75,11 @@ export async function uploadImageToCloudinary(
 // Helper function to delete image from Cloudinary
 export async function deleteImageFromCloudinary(publicId: string): Promise<void> {
   return new Promise((resolve, reject) => {
+    if (!cloudName || !apiKey || !apiSecret) {
+      reject(new Error('Cloudinary credentials not configured'))
+      return
+    }
+
     cloudinary.uploader.destroy(publicId, (error, result) => {
       if (error) {
         console.error('Cloudinary delete error:', error)
