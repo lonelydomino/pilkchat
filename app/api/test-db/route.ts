@@ -7,16 +7,16 @@ export async function GET() {
     const userCount = await prisma.user.count()
     
     // Test 2: Raw SQL query
-    const rawResult = await executeRawQuery('SELECT COUNT(*) as count FROM "User"')
+    const rawResult = await executeRawQuery<{ count: string }>('SELECT COUNT(*) as count FROM "User"')
     
     // Test 3: Check database version
-    const versionResult = await executeRawQuery('SELECT version() as version')
+    const versionResult = await executeRawQuery<{ version: string }>('SELECT version() as version')
     
     return NextResponse.json({
       status: 'success',
       tests: {
         prismaUserCount: userCount,
-        rawUserCount: rawResult[0]?.count,
+        rawUserCount: parseInt(rawResult[0]?.count || '0'),
         databaseVersion: versionResult[0]?.version,
       },
       timestamp: new Date().toISOString()
