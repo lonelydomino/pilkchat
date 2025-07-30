@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
-import { sendMessageToUsers } from '../../../messages/stream/route'
+import { sendMessageToUsers } from '@/lib/message-stream'
 
 const prisma = new PrismaClient()
 

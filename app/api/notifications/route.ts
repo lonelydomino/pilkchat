@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
-import { sendNotificationToUser } from './stream/route'
+import { sendNotificationToUser } from '@/lib/notification-stream'
 
 const prisma = new PrismaClient()
 

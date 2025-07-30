@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
-import { sendNotificationToUser } from '../../../notifications/stream/route'
+import { sendNotificationToUser } from '@/lib/notification-stream'
 
 const prisma = new PrismaClient()
 
@@ -80,7 +80,7 @@ export async function POST(
             message: `${session.user.name} liked your post`,
             userId: post.authorId,
             relatedUserId: userId,
-            postId: postId,
+            relatedPostId: postId,
           },
         })
 

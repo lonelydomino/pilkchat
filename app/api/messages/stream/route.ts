@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
-
-// Store active connections
-const connections = new Map<string, ReadableStreamDefaultController>()
+import { addConnection, removeConnection } from '@/lib/message-stream'
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,7 +20,7 @@ export async function GET(request: NextRequest) {
     const stream = new ReadableStream({
       start(controller) {
         // Store the controller for this user
-        connections.set(userId, controller)
+        addConnection(userId, controller)
 
         // Send initial connection message
         controller.enqueue(
@@ -43,14 +41,14 @@ export async function GET(request: NextRequest) {
             )
           } catch (error) {
             clearInterval(heartbeat)
-            connections.delete(userId)
+            removeConnection(userId)
           }
         }, 30000)
 
         // Clean up on close
         request.signal.addEventListener('abort', () => {
           clearInterval(heartbeat)
-          connections.delete(userId)
+          removeConnection(userId)
           controller.close()
         })
       }
@@ -72,27 +70,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-}
-
-// Function to send message to specific user
-export function sendMessageToUser(userId: string, message: any) {
-  const controller = connections.get(userId)
-  if (controller) {
-    try {
-      controller.enqueue(
-        new TextEncoder().encode(`data: ${JSON.stringify({
-          type: 'new_message',
-          message: message
-        })}\n\n`)
-      )
-    } catch (error) {
-      console.error('Error sending message to user:', error)
-      connections.delete(userId)
-    }
-  }
-}
-
-// Function to send message to multiple users
-export function sendMessageToUsers(userIds: string[], message: any) {
-  userIds.forEach(userId => sendMessageToUser(userId, message))
 } 

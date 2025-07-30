@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Add current user to participants
-    const allParticipantIds = [...new Set([session.user.id, ...participantIds])]
+    const allParticipantIds = Array.from(new Set([session.user.id, ...participantIds]))
 
     // Check if conversation already exists between these users
     const existingConversations = await prisma.conversation.findMany({

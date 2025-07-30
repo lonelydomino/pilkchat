@@ -5,10 +5,10 @@ import { Providers } from '@/components/providers'
 import { ToastContainer } from '@/components/toast'
 import { NotificationProvider } from '@/components/notification-provider'
 
-const inter = {
+const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
-}
+})
 
 export const metadata: Metadata = {
   title: 'Pilk Chat',

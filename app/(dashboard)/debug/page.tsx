@@ -54,35 +54,18 @@ export default function DebugPage() {
           <p><strong>Session Status:</strong> {status}</p>
           <p><strong>Has Session:</strong> {!!session ? 'Yes' : 'No'}</p>
           <p><strong>Has User:</strong> {!!session?.user ? 'Yes' : 'No'}</p>
-          <p><strong>Has Image:</strong> {!!session?.user?.image ? 'Yes' : 'No'}</p>
-          <p><strong>Image Length:</strong> {session?.user?.image?.length || 0}</p>
+          <p><strong>Has Image:</strong> {'Image not included in session (JWT size)'}</p>
+          <p><strong>Image Length:</strong> {'N/A'}</p>
         </div>
 
-        {/* Test Image Display */}
-        {session?.user?.image && (
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-lg font-semibold mb-4">Test Image Display</h2>
-            <div className="w-32 h-32 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden">
-              <img 
-                src={session.user.image} 
-                alt="Test profile"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  console.log('Image failed to load:', session.user.image)
-                  const target = e.target as HTMLImageElement
-                  target.style.display = 'none'
-                  target.nextElementSibling?.classList.remove('hidden')
-                }}
-              />
-              <div className="hidden w-full h-full bg-gray-400 flex items-center justify-center">
-                <span className="text-white text-sm">Failed to load</span>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 mt-2">
-              Image URL: {session.user.image.substring(0, 100)}...
-            </p>
-          </div>
-        )}
+        {/* Image Note */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-lg font-semibold mb-4">Image Information</h2>
+          <p className="text-gray-600">
+            <strong>Note:</strong> User images are not included in the session for JWT size optimization. 
+            Images are fetched separately when needed (e.g., in profile pages).
+          </p>
+        </div>
       </div>
     </div>
   )

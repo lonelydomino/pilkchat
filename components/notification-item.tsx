@@ -95,11 +95,7 @@ export function NotificationItem({ notification, onMarkAsRead, onDelete }: Notif
                 {notification.message}
               </p>
               
-              {notification.relatedPost && (
-                <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">
-                  "{notification.relatedPost.content.substring(0, 100)}..."
-                </div>
-              )}
+
               
               <p className="text-xs text-gray-500 mt-1">
                 {formatDate(notification.createdAt)}

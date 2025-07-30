@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import Link from 'next/link'
 import { PostCard } from '@/components/post-card'
 import { Button } from '@/components/ui/button'
 import { User, Search, UserPlus, UserCheck, MessageSquare, Hash } from 'lucide-react'

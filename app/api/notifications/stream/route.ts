@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
-
-// Store active connections
-const connections = new Map<string, ReadableStreamDefaultController>()
+import { addConnection, removeConnection } from '@/lib/notification-stream'
 
 export async function GET(request: NextRequest) {
   try {
@@ -31,7 +29,7 @@ export async function GET(request: NextRequest) {
     const stream = new ReadableStream({
       start(controller) {
         // Store the controller for this user
-        connections.set(userId, controller)
+        addConnection(userId, controller)
 
         // Send initial connection message
         controller.enqueue(`data: ${JSON.stringify({
@@ -50,7 +48,7 @@ export async function GET(request: NextRequest) {
         // Clean up on close
         request.signal.addEventListener('abort', () => {
           clearInterval(heartbeat)
-          connections.delete(userId)
+          removeConnection(userId)
           controller.close()
         })
       }
@@ -64,22 +62,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-}
-
-// Function to send notification to a specific user
-export function sendNotificationToUser(userId: string, notification: any) {
-  const controller = connections.get(userId)
-  if (controller) {
-    try {
-      controller.enqueue(`data: ${JSON.stringify(notification)}\n\n`)
-    } catch (error) {
-      console.error('Error sending notification:', error)
-      connections.delete(userId)
-    }
-  }
-}
-
-// Function to broadcast notification to multiple users
-export function sendNotificationToUsers(userIds: string[], notification: any) {
-  userIds.forEach(userId => sendNotificationToUser(userId, notification))
 } 

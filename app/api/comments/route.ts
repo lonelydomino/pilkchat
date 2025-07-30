@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
-import { sendNotificationToUser } from '../notifications/stream/route'
+import { sendNotificationToUser } from '@/lib/notification-stream'
 
 const prisma = new PrismaClient()
 
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
           message: `${session.user.name} commented on your post`,
           userId: post.authorId,
           relatedUserId: session.user.id,
-          postId: postId,
+          relatedPostId: postId,
         },
       })
 

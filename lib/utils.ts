@@ -12,7 +12,7 @@ export function extractHashtags(text: string): string[] {
   if (!matches) return []
   
   // Remove the # symbol and return unique hashtags
-  return [...new Set(matches.map(tag => tag.slice(1).toLowerCase()))]
+  return Array.from(new Set(matches.map(tag => tag.slice(1).toLowerCase())))
 }
 
 export function formatHashtags(text: string): { text: string; hashtags: string[] } {
