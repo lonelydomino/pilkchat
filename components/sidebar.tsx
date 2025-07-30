@@ -56,7 +56,17 @@ export function Sidebar() {
   }, [session?.user?.id])
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/login' })
+    try {
+      console.log('Signing out...')
+      await signOut({ 
+        callbackUrl: '/login',
+        redirect: true 
+      })
+    } catch (error) {
+      console.error('Sign out error:', error)
+      // Fallback: redirect manually if signOut fails
+      window.location.href = '/login'
+    }
   }
 
   const getCountForItem = (itemName: string) => {
