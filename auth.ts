@@ -1,5 +1,4 @@
 import NextAuth from "next-auth"
-import { PrismaAdapter } from "@auth/prisma-adapter"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma, withRetry } from "@/lib/prisma"
@@ -21,7 +20,8 @@ if (missingVars.length > 0) {
 }
 
 export const authOptions = {
-  adapter: PrismaAdapter(prisma) as any,
+  // Remove PrismaAdapter temporarily to test if it's causing issues
+  // adapter: PrismaAdapter(prisma) as any,
   providers: [
     CredentialsProvider({
       name: "credentials",
