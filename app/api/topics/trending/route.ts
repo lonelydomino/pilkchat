@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, withRetry, cleanupPrisma, executeRawQuery, safeDatabaseOperation } from '@/lib/prisma'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     // Try to get posts with Prisma first, fallback to raw SQL if needed
