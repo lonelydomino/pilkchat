@@ -1,19 +1,8 @@
 import NextAuth from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import { PrismaClient } from "@prisma/client"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
-
-// Only create Prisma client if DATABASE_URL is available
-let prisma: PrismaClient | null = null
-
-try {
-  if (process.env.DATABASE_URL) {
-    prisma = new PrismaClient()
-  }
-} catch (error) {
-  console.warn('Could not initialize Prisma client:', error)
-}
+import { prisma, withRetry } from "@/lib/prisma"
 
 // Ensure required environment variables are available
 const requiredEnvVars = {
@@ -32,7 +21,7 @@ if (missingVars.length > 0) {
 }
 
 export const authOptions = {
-  adapter: prisma ? PrismaAdapter(prisma) as any : undefined, // Only use adapter if prisma is available
+  adapter: PrismaAdapter(prisma) as any,
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -41,18 +30,22 @@ export const authOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials: Record<"email" | "password", string> | undefined) {
-        if (!credentials?.email || !credentials?.password || !prisma) {
+        if (!credentials?.email || !credentials?.password) {
           return null
         }
 
         try {
-          const user = await prisma.user.findUnique({
-            where: {
-              email: credentials.email
-            }
-          })
+          // Use retry logic for database queries
+          const user = await withRetry(async () => {
+            return await prisma.user.findUnique({
+              where: {
+                email: credentials.email
+              }
+            })
+          }, 3, 200)
 
           if (!user || !user.password) {
+            console.log('User not found or no password:', credentials.email)
             return null
           }
 
@@ -62,9 +55,11 @@ export const authOptions = {
           )
 
           if (!isPasswordValid) {
+            console.log('Invalid password for user:', credentials.email)
             return null
           }
 
+          console.log('Authentication successful for user:', credentials.email)
           return {
             id: user.id,
             email: user.email || '', // Ensure email is never null
