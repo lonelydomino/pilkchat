@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
 import { prisma, withRetry, cleanupPrisma } from '@/lib/prisma'
+import { uploadImageToCloudinary } from '@/lib/cloudinary'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
@@ -12,7 +10,6 @@ export const dynamic = 'force-dynamic'
 // Configure upload settings
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
-const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads')
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,49 +48,47 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if we're in a serverless environment (Vercel)
-    const isServerless = process.env.VERCEL === '1'
-    
-    if (isServerless) {
-      // In serverless environment, we can't write to filesystem
-      // For now, return a placeholder or implement cloud storage
-      return NextResponse.json({
-        success: true,
-        url: '/uploads/placeholder.jpg', // Placeholder for now
-        fileName: 'placeholder.jpg',
-        size: file.size,
-        type: file.type,
-        message: 'File upload not available in serverless environment. Please implement cloud storage.'
-      })
-    }
+    // Convert file to buffer
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
 
-    // Create upload directory if it doesn't exist
-    if (!existsSync(UPLOAD_DIR)) {
-      await mkdir(UPLOAD_DIR, { recursive: true })
-    }
-
-    // Generate unique filename
+    // Generate unique filename for Cloudinary
     const timestamp = Date.now()
     const randomString = Math.random().toString(36).substring(2, 15)
     const fileExtension = file.name.split('.').pop()
-    const fileName = `${session.user.id}_${timestamp}_${randomString}.${fileExtension}`
-    const filePath = join(UPLOAD_DIR, fileName)
+    const fileName = `${session.user.id}_${timestamp}_${randomString}`
 
-    // Convert file to buffer and save
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    
-    await writeFile(filePath, buffer)
+    // Upload to Cloudinary
+    const cloudinaryResult = await uploadImageToCloudinary(buffer, fileName, {
+      folder: 'pilkchat',
+      public_id: fileName,
+    })
 
-    // Return the public URL
-    const publicUrl = `/uploads/${fileName}`
+    // Store image info in database (optional)
+    try {
+      await withRetry(async () => {
+        await prisma.user.update({
+          where: { id: session.user.id },
+          data: {
+            image: cloudinaryResult.url
+          }
+        })
+      }, 3, 200)
+    } catch (dbError) {
+      console.warn('Failed to update user image in database:', dbError)
+      // Don't fail the upload if database update fails
+    }
 
     return NextResponse.json({
       success: true,
-      url: publicUrl,
+      url: cloudinaryResult.url,
+      public_id: cloudinaryResult.public_id,
       fileName: fileName,
       size: file.size,
-      type: file.type
+      type: file.type,
+      width: cloudinaryResult.width,
+      height: cloudinaryResult.height,
+      format: cloudinaryResult.format
     })
 
   } catch (error) {
