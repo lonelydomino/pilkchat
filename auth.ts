@@ -6,6 +6,22 @@ import bcrypt from "bcryptjs"
 
 const prisma = new PrismaClient()
 
+// Ensure required environment variables are available
+const requiredEnvVars = {
+  NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+  NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+  DATABASE_URL: process.env.DATABASE_URL,
+}
+
+// Check for missing environment variables
+const missingVars = Object.entries(requiredEnvVars)
+  .filter(([_, value]) => !value)
+  .map(([key]) => key)
+
+if (missingVars.length > 0) {
+  console.warn(`Missing required environment variables: ${missingVars.join(', ')}`)
+}
+
 export const authOptions = {
   adapter: PrismaAdapter(prisma) as any, // Type assertion to avoid adapter conflicts
   providers: [
@@ -20,31 +36,36 @@ export const authOptions = {
           return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
+        try {
+          const user = await prisma.user.findUnique({
+            where: {
+              email: credentials.email
+            }
+          })
+
+          if (!user || !user.password) {
+            return null
           }
-        })
 
-        if (!user || !user.password) {
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password,
+            user.password
+          )
+
+          if (!isPasswordValid) {
+            return null
+          }
+
+          return {
+            id: user.id,
+            email: user.email || '', // Ensure email is never null
+            name: user.name || '', // Ensure name is never null
+            username: user.username,
+            // Don't include image in JWT to avoid token size issues
+          }
+        } catch (error) {
+          console.error('Auth error:', error)
           return null
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        )
-
-        if (!isPasswordValid) {
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email || '', // Ensure email is never null
-          name: user.name || '', // Ensure name is never null
-          username: user.username,
-          // Don't include image in JWT to avoid token size issues
         }
       }
     })
@@ -83,7 +104,8 @@ export const authOptions = {
     signIn: '/login',
     signUp: '/signup',
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-for-development",
+  debug: process.env.NODE_ENV === 'development',
 }
 
 export default NextAuth(authOptions) 
