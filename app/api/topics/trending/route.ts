@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma, withRetry } from '@/lib/prisma'
+import { prisma, withRetry, cleanupPrisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
-    // Extract hashtags from posts and count their usage with retry logic
+    // Extract hashtags from posts and count their usage with enhanced retry logic
     const posts = await withRetry(async () => {
       return await prisma.post.findMany({
         where: {
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
           },
         },
       })
-    })
+    }, 5, 200) // Increased retries and delay for better reliability
 
     // Extract hashtags from post content
     const hashtagCounts: { [key: string]: number } = {}
@@ -54,9 +54,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ topics: trendingTopics })
   } catch (error) {
     console.error('Error fetching trending topics:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch trending topics' },
-      { status: 500 }
-    )
+    
+    // Return a fallback response instead of error
+    return NextResponse.json({ 
+      topics: [],
+      message: 'Unable to fetch trending topics at this time'
+    }, { status: 200 })
+  } finally {
+    // Clean up connection in serverless environment
+    await cleanupPrisma()
   }
 } 
