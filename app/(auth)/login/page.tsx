@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [redirectAttempts, setRedirectAttempts] = useState(0)
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
@@ -19,9 +20,23 @@ export default function LoginPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (status === 'authenticated' && session) {
+      console.log('Session authenticated, redirecting to:', callbackUrl)
       router.push(callbackUrl)
     }
   }, [session, status, router, callbackUrl])
+
+  // Fallback redirect mechanism
+  useEffect(() => {
+    if (redirectAttempts > 0 && redirectAttempts < 3) {
+      const timer = setTimeout(() => {
+        console.log(`Fallback redirect attempt ${redirectAttempts} to:`, callbackUrl)
+        router.push(callbackUrl)
+        setRedirectAttempts(prev => prev + 1)
+      }, 1000 * redirectAttempts)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [redirectAttempts, router, callbackUrl])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,21 +44,30 @@ export default function LoginPage() {
     setError('')
 
     try {
+      console.log('Attempting sign in...')
       const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
       })
 
+      console.log('Sign in result:', result)
+
       if (result?.error) {
         setError('Invalid email or password')
       } else if (result?.ok) {
-        // Wait a moment for the session to be established
+        console.log('Sign in successful, waiting for session...')
+        // Start fallback redirect mechanism
+        setRedirectAttempts(1)
+        
+        // Also try immediate redirect
         setTimeout(() => {
+          console.log('Redirecting to:', callbackUrl)
           router.push(callbackUrl)
-        }, 100)
+        }, 500)
       }
     } catch (error) {
+      console.error('Sign in error:', error)
       setError('An error occurred. Please try again.')
     } finally {
       setIsLoading(false)
@@ -57,6 +81,18 @@ export default function LoginPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // If already authenticated, show loading while redirecting
+  if (status === 'authenticated' && session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Redirecting...</p>
         </div>
       </div>
     )
