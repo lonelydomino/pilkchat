@@ -35,20 +35,20 @@ export async function GET(request: NextRequest) {
             COALESCE(l.like_count, 0) as like_count,
             COALESCE(c.comment_count, 0) as comment_count,
             COALESCE(r.repost_count, 0) as repost_count
-          FROM "Post" p
+          FROM posts p
           LEFT JOIN (
             SELECT post_id, COUNT(*) as like_count 
-            FROM "Like" 
+            FROM likes 
             GROUP BY post_id
           ) l ON p.id = l.post_id
           LEFT JOIN (
             SELECT post_id, COUNT(*) as comment_count 
-            FROM "Comment" 
+            FROM comments 
             GROUP BY post_id
           ) c ON p.id = c.post_id
           LEFT JOIN (
             SELECT post_id, COUNT(*) as repost_count 
-            FROM "Repost" 
+            FROM reposts 
             GROUP BY post_id
           ) r ON p.id = r.post_id
           WHERE p.published = true 
