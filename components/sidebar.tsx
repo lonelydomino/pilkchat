@@ -18,15 +18,15 @@ import {
   MessageSquare
 } from 'lucide-react'
 import { useNotifications } from '@/hooks/useNotifications'
+import { useUnreadMessages } from '@/hooks/useUnreadMessages'
 
 const navigation = [
   { name: 'Home', href: '/dashboard', icon: Home },
   { name: 'Explore', href: '/explore', icon: TrendingUp },
   { name: 'Search', href: '/search', icon: Search },
-  { name: 'Messages', href: '/messages', icon: MessageSquare },
+  { name: 'Messages', href: '/messages', icon: MessageSquare, showCount: true },
   { name: 'Notifications', href: '/notifications', icon: Bell, showCount: true },
   { name: 'Bookmarks', href: '/bookmarks', icon: Bookmark, showCount: true },
-  { name: 'Profile', href: '/profile', icon: User },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
@@ -34,6 +34,7 @@ export function Sidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
   const { unreadCount, isConnected } = useNotifications()
+  const { unreadCount: unreadMessagesCount } = useUnreadMessages()
   const [bookmarkCount, setBookmarkCount] = useState(0)
 
   const fetchBookmarkCount = async () => {
@@ -62,6 +63,9 @@ export function Sidebar() {
     if (itemName === 'Notifications') {
       return unreadCount
     }
+    if (itemName === 'Messages') {
+      return unreadMessagesCount
+    }
     if (itemName === 'Bookmarks') {
       return bookmarkCount
     }
@@ -72,7 +76,7 @@ export function Sidebar() {
     <div className="w-64 bg-white shadow-lg h-screen flex flex-col">
       {/* Logo */}
       <div className="p-6 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-blue-600">Bluesky Clone</h1>
+        <h1 className="text-2xl font-bold text-blue-600">Pilk Chat</h1>
       </div>
 
       {/* Navigation */}
@@ -94,13 +98,35 @@ export function Sidebar() {
                     {count > 99 ? '99+' : count}
                   </span>
                 )}
-                {item.name === 'Notifications' && isConnected && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                {item.name === 'Notifications' && unreadCount > 0 && (
+                  <div 
+                    className="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white shadow-sm bg-green-500"
+                    title={`${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`}
+                  ></div>
+                )}
+                {item.name === 'Messages' && unreadMessagesCount > 0 && (
+                  <div 
+                    className="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white shadow-sm bg-green-500"
+                    title={`${unreadMessagesCount} unread message${unreadMessagesCount !== 1 ? 's' : ''}`}
+                  ></div>
                 )}
               </Button>
             </Link>
           )
         })}
+        
+        {/* Profile Link - Dynamic based on current user */}
+        {session?.user?.username && (
+          <Link href={`/profile/${session.user.username}`}>
+            <Button
+              variant={pathname === `/profile/${session.user.username}` ? "secondary" : "ghost"}
+              className="w-full justify-start relative"
+            >
+              <User className="w-5 h-5 mr-3" />
+              Profile
+            </Button>
+          </Link>
+        )}
       </nav>
 
       {/* User Profile */}

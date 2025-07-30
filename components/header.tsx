@@ -1,14 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession, signOut } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
-import { Search, Bell, User } from 'lucide-react'
+import { Search, Bell, User, Settings, LogOut, ChevronDown, MessageSquare } from 'lucide-react'
 import { NotificationBadge } from './notification-badge'
 
 export function Header() {
   const [searchQuery, setSearchQuery] = useState('')
+  const [showUserMenu, setShowUserMenu] = useState(false)
   const router = useRouter()
+  const { data: session } = useSession()
+  const userMenuRef = useRef<HTMLDivElement>(null)
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -16,6 +20,42 @@ export function Header() {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
     }
   }
+
+  const handleNotificationsClick = () => {
+    router.push('/notifications')
+  }
+
+  const handleMessagesClick = () => {
+    router.push('/messages')
+  }
+
+  const handleProfileClick = () => {
+    if (session?.user?.username) {
+      router.push(`/profile/${session.user.username}`)
+    }
+    setShowUserMenu(false)
+  }
+
+  const handleSettingsClick = () => {
+    router.push('/settings')
+    setShowUserMenu(false)
+  }
+
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: '/login' })
+  }
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
@@ -36,11 +76,58 @@ export function Header() {
 
         {/* Right side actions */}
         <div className="flex items-center space-x-4">
-          <NotificationBadge />
+          <div onClick={handleNotificationsClick} className="cursor-pointer">
+            <NotificationBadge />
+          </div>
           
-          <Button variant="ghost" size="sm">
-            <User className="w-5 h-5" />
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={handleMessagesClick}
+          >
+            <MessageSquare className="w-5 h-5" />
           </Button>
+          
+          <div className="relative" ref={userMenuRef}>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center space-x-1"
+            >
+              <User className="w-5 h-5" />
+              <ChevronDown className="w-4 h-4" />
+            </Button>
+            
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="py-1">
+                  <button
+                    onClick={handleProfileClick}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <User className="w-4 h-4 mr-3" />
+                    Profile
+                  </button>
+                  <button
+                    onClick={handleSettingsClick}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <Settings className="w-4 h-4 mr-3" />
+                    Settings
+                  </button>
+                  <hr className="my-1" />
+                  <button
+                    onClick={handleSignOut}
+                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    <LogOut className="w-4 h-4 mr-3" />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

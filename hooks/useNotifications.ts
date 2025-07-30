@@ -23,6 +23,11 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isConnected, setIsConnected] = useState(false)
+
+  // Debug connection state changes
+  useEffect(() => {
+    console.log(`🔗 Notifications connection: ${isConnected ? 'Connected' : 'Disconnected'}`)
+  }, [isConnected])
   const [isLoading, setIsLoading] = useState(true)
 
   // Fetch initial notifications
@@ -93,7 +98,7 @@ export function useNotifications() {
 
         eventSource.onopen = () => {
           setIsConnected(true)
-          console.log('Connected to notifications stream')
+          console.log('✅ Connected to notifications stream')
         }
 
         eventSource.onmessage = (event) => {
@@ -130,7 +135,7 @@ export function useNotifications() {
         }
 
         eventSource.onerror = (error) => {
-          console.error('Notifications stream error:', error)
+          console.error('❌ Notifications stream error:', error)
           setIsConnected(false)
           
           // Attempt to reconnect after 5 seconds
