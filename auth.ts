@@ -4,7 +4,16 @@ import { PrismaClient } from "@prisma/client"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 
-const prisma = new PrismaClient()
+// Only create Prisma client if DATABASE_URL is available
+let prisma: PrismaClient | null = null
+
+try {
+  if (process.env.DATABASE_URL) {
+    prisma = new PrismaClient()
+  }
+} catch (error) {
+  console.warn('Could not initialize Prisma client:', error)
+}
 
 // Ensure required environment variables are available
 const requiredEnvVars = {
@@ -23,7 +32,7 @@ if (missingVars.length > 0) {
 }
 
 export const authOptions = {
-  adapter: PrismaAdapter(prisma) as any, // Type assertion to avoid adapter conflicts
+  adapter: prisma ? PrismaAdapter(prisma) as any : undefined, // Only use adapter if prisma is available
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -32,7 +41,7 @@ export const authOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials: Record<"email" | "password", string> | undefined) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.email || !credentials?.password || !prisma) {
           return null
         }
 
