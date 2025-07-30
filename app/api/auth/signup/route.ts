@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma, withRetry, cleanupPrisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient()
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,15 +17,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email },
-          { username }
-        ]
-      }
-    })
+    // Check if user already exists with retry logic
+    const existingUser = await withRetry(async () => {
+      return await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email },
+            { username }
+          ]
+        }
+      })
+    }, 3, 200)
 
     if (existingUser) {
       return NextResponse.json(
@@ -36,22 +39,24 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12)
 
-    // Create user with hashed password
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        username,
-        password: hashedPassword,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        username: true,
-        createdAt: true,
-      }
-    })
+    // Create user with hashed password using retry logic
+    const user = await withRetry(async () => {
+      return await prisma.user.create({
+        data: {
+          name,
+          email,
+          username,
+          password: hashedPassword,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          username: true,
+          createdAt: true,
+        }
+      })
+    }, 3, 200)
 
     return NextResponse.json({
       message: 'User created successfully',
@@ -60,8 +65,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating user:', error)
     return NextResponse.json(
-      { error: 'Failed to create user' },
+      { error: 'Failed to create user. Please try again.' },
       { status: 500 }
     )
+  } finally {
+    await cleanupPrisma()
   }
 } 

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma, withRetry, cleanupPrisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient()
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,30 +17,31 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email }
-    })
+    // Find user with retry logic
+    const user = await withRetry(async () => {
+      return await prisma.user.findUnique({
+        where: { email }
+      })
+    }, 3, 200)
 
-    if (!user) {
+    if (!user || !user.password) {
       return NextResponse.json(
-        { error: 'Invalid credentials' },
+        { error: 'Invalid email or password' },
         { status: 401 }
       )
     }
 
-    // For now, we'll skip password verification since we don't have passwords in the schema
-    // In a real app, you'd verify the password:
-    // const isValidPassword = await bcrypt.compare(password, user.password)
-    // if (!isValidPassword) {
-    //   return NextResponse.json(
-    //     { error: 'Invalid credentials' },
-    //     { status: 401 }
-    //   )
-    // }
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password)
 
-    // Create session or JWT token
-    // For now, we'll just return success
+    if (!isPasswordValid) {
+      return NextResponse.json(
+        { error: 'Invalid email or password' },
+        { status: 401 }
+      )
+    }
+
+    // Return user data (without password)
     return NextResponse.json({
       message: 'Login successful',
       user: {
@@ -52,8 +54,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error during login:', error)
     return NextResponse.json(
-      { error: 'Failed to login' },
+      { error: 'Login failed. Please try again.' },
       { status: 500 }
     )
+  } finally {
+    await cleanupPrisma()
   }
 } 
