@@ -23,16 +23,24 @@ export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isConnected, setIsConnected] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isClient, setIsClient] = useState(false)
+
+  // Ensure we're on the client side
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   // Debug connection state changes
   useEffect(() => {
-    console.log(`🔗 Notifications connection: ${isConnected ? 'Connected' : 'Disconnected'}`)
-  }, [isConnected])
-  const [isLoading, setIsLoading] = useState(true)
+    if (isClient) {
+      console.log(`🔗 Notifications connection: ${isConnected ? 'Connected' : 'Disconnected'}`)
+    }
+  }, [isConnected, isClient])
 
   // Fetch initial notifications
   const fetchNotifications = useCallback(async () => {
-    if (!session?.user?.id) return
+    if (!session?.user?.id || !isClient) return
 
     try {
       const response = await fetch('/api/notifications')
@@ -88,7 +96,7 @@ export function useNotifications() {
 
   // Set up real-time connection
   useEffect(() => {
-    if (!session?.user?.id) return
+    if (!session?.user?.id || !isClient) return
 
     let eventSource: EventSource | null = null
 

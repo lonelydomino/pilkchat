@@ -7,9 +7,15 @@ export function useUnreadMessages() {
   const { data: session } = useSession()
   const [unreadCount, setUnreadCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const [isClient, setIsClient] = useState(false)
+
+  // Ensure we're on the client side
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   useEffect(() => {
-    if (!session?.user?.id) {
+    if (!session?.user?.id || !isClient) {
       setUnreadCount(0)
       setIsLoading(false)
       return
