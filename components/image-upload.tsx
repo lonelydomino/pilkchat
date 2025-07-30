@@ -84,7 +84,7 @@ export function ImageUpload({
       const formData = new FormData()
       formData.append('image', file)
 
-      const response = await fetch('/api/upload/image', {
+      const response = await fetch('/api/upload/cloudinary', {
         method: 'POST',
         body: formData,
       })
