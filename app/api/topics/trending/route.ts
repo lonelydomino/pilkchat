@@ -1,28 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma, withRetry } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
-    // Extract hashtags from posts and count their usage
-    const posts = await prisma.post.findMany({
-      where: {
-        published: true,
-        createdAt: {
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-        },
-      },
-      select: {
-        content: true,
-        _count: {
-          select: {
-            likes: true,
-            comments: true,
-            reposts: true,
+    // Extract hashtags from posts and count their usage with retry logic
+    const posts = await withRetry(async () => {
+      return await prisma.post.findMany({
+        where: {
+          published: true,
+          createdAt: {
+            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
           },
         },
-      },
+        select: {
+          content: true,
+          _count: {
+            select: {
+              likes: true,
+              comments: true,
+              reposts: true,
+            },
+          },
+        },
+      })
     })
 
     // Extract hashtags from post content
