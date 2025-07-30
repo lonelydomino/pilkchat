@@ -11,12 +11,6 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient({
       url: process.env.DATABASE_URL,
     },
   },
-  // Serverless-specific configuration
-  __internal: {
-    engine: {
-      connectionLimit: 1,
-    },
-  },
 })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
@@ -46,6 +40,37 @@ export async function withRetry<T>(
     }
   }
   throw new Error('Max retries exceeded')
+}
+
+// Raw SQL helper to avoid prepared statement issues
+export async function executeRawQuery<T>(query: string, params: any[] = []): Promise<T[]> {
+  try {
+    return await prisma.$queryRawUnsafe(query, ...params)
+  } catch (error) {
+    console.error('Raw query error:', error)
+    throw error
+  }
+}
+
+// Safe database operation that uses raw SQL when needed
+export async function safeDatabaseOperation<T>(
+  operation: () => Promise<T>,
+  fallbackOperation?: () => Promise<T>
+): Promise<T> {
+  try {
+    return await withRetry(operation, 3, 200)
+  } catch (error: any) {
+    if (fallbackOperation) {
+      console.log('Primary operation failed, trying fallback...')
+      try {
+        return await fallbackOperation()
+      } catch (fallbackError) {
+        console.error('Fallback operation also failed:', fallbackError)
+        throw fallbackError
+      }
+    }
+    throw error
+  }
 }
 
 // Connection cleanup for serverless environments
