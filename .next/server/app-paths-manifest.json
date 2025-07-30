@@ -1,1 +1,6 @@
-{}
+{
+  "/page": "app/page.js",
+  "/api/messages/unread-count/route": "app/api/messages/unread-count/route.js",
+  "/api/notifications/unread-count/route": "app/api/notifications/unread-count/route.js",
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js"
+}
