@@ -123,5 +123,4 @@ if (typeof window === 'undefined') {
   process.on('beforeExit', cleanupPrisma)
   process.on('SIGINT', cleanupPrisma)
   process.on('SIGTERM', cleanupPrisma)
-} 
-} 
+}
