@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
-import { prisma, withRetry, cleanupPrisma } from '@/lib/prisma'
+import { prisma, withRetry, cleanupPrisma, createPrismaClient } from '@/lib/prisma'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
@@ -33,7 +33,7 @@ export async function GET(
           },
         },
       })
-    })
+    }, 3, 500) // Increased delay for user profile queries
 
     if (!user) {
       console.log('USER PROFILE: User not found:', username)
@@ -58,7 +58,7 @@ export async function GET(
               },
             },
           })
-        })
+        }, 2, 300) // Shorter retry for follow check
         isFollowing = !!follow
       } catch (followError) {
         console.warn('USER PROFILE: Failed to check follow status:', followError)
@@ -85,11 +85,82 @@ export async function GET(
     return NextResponse.json(profile)
   } catch (error) {
     console.error('USER PROFILE: Error fetching user profile:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch user profile', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    )
+    
+    // Try fallback approach with direct client
+    try {
+      console.log('USER PROFILE: 🔄 Trying fallback approach...')
+      const fallbackClient = createPrismaClient()
+      
+      const fallbackUser = await fallbackClient.user.findUnique({
+        where: { username },
+        include: {
+          _count: {
+            select: {
+              posts: true,
+              followers: true,
+              following: true,
+            },
+          },
+        },
+      })
+      
+      if (!fallbackUser) {
+        await fallbackClient.$disconnect()
+        return NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        )
+      }
+      
+      // Check follow status with fallback client
+      let isFollowing = false
+      if (currentUserId && currentUserId !== fallbackUser.id) {
+        try {
+          const follow = await fallbackClient.follows.findUnique({
+            where: {
+              followerId_followingId: {
+                followerId: currentUserId,
+                followingId: fallbackUser.id,
+              },
+            },
+          })
+          isFollowing = !!follow
+        } catch (followError) {
+          console.warn('USER PROFILE: Failed to check follow status in fallback:', followError)
+        }
+      }
+      
+      await fallbackClient.$disconnect()
+      
+      const fallbackProfile = {
+        id: fallbackUser.id,
+        name: fallbackUser.name,
+        username: fallbackUser.username,
+        email: fallbackUser.email,
+        bio: fallbackUser.bio,
+        location: fallbackUser.location,
+        website: fallbackUser.website,
+        image: fallbackUser.image,
+        createdAt: fallbackUser.createdAt,
+        _count: fallbackUser._count,
+        isFollowing,
+        isOwnProfile: currentUserId === fallbackUser.id,
+      }
+      
+      console.log('USER PROFILE: ✅ Profile fetched with fallback for:', fallbackUser.username)
+      return NextResponse.json(fallbackProfile)
+    } catch (fallbackError) {
+      console.error('USER PROFILE: ❌ Fallback also failed:', fallbackError)
+      return NextResponse.json(
+        { error: 'Failed to fetch user profile', details: 'Database connection issues. Please try again.' },
+        { status: 500 }
+      )
+    }
   } finally {
-    await cleanupPrisma()
+    try {
+      await cleanupPrisma()
+    } catch (cleanupError) {
+      console.error('USER PROFILE: ❌ Error during cleanup:', cleanupError)
+    }
   }
 } 
