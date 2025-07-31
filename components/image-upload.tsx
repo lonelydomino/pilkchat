@@ -81,12 +81,29 @@ export function ImageUpload({
 
     setIsUploading(true)
     try {
+      console.log('📤 CLIENT: Starting image upload...')
+      console.log('📤 CLIENT: File details:', {
+        name: file.name,
+        type: file.type,
+        size: file.size
+      })
+      
       const formData = new FormData()
       formData.append('image', file)
+      console.log('📤 CLIENT: FormData created')
 
-      const response = await fetch('/api/cloudinary-upload?t=' + Date.now(), {
+      const uploadUrl = '/api/upload-test?t=' + Date.now()
+      console.log('📤 CLIENT: Uploading to:', uploadUrl)
+      
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
+      })
+      
+      console.log('📤 CLIENT: Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
       })
 
       if (response.ok) {
