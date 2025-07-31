@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user with retry logic
-    const user = await withRetry(async () => {
-      return await prisma.user.findUnique({
+    const user = await withRetry(async (client) => {
+      return await client.user.findUnique({
         where: { email }
       })
     }, 3, 200)

@@ -24,9 +24,9 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit
 
     // Use retry logic for database queries
-    const [notifications, totalCount] = await withRetry(async () => {
+    const [notifications, totalCount] = await withRetry(async (client) => {
       const [notifs, count] = await Promise.all([
-        prisma.notification.findMany({
+        client.notification.findMany({
           where: {
             userId: session.user.id,
           },
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
           skip: offset,
           take: limit,
         }),
-        prisma.notification.count({
+        client.notification.count({
           where: {
             userId: session.user.id,
           },
@@ -87,8 +87,8 @@ export async function POST(request: NextRequest) {
     const { type, message, userId, relatedUserId, postId } = await request.json()
 
     // Use retry logic for creating notification
-    const notification = await withRetry(async () => {
-      return await prisma.notification.create({
+    const notification = await withRetry(async (client) => {
+      return await client.notification.create({
         data: {
           type,
           message,

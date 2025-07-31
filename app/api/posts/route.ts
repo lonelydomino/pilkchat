@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
     console.log('📝 POSTS: 👤 Session user:', session?.user?.id || 'No session')
 
     console.log('📝 POSTS: 🔍 Fetching posts...')
-    const posts = await withRetry(async () => {
-      return await prisma.post.findMany({
+    const posts = await withRetry(async (client) => {
+      return await client.post.findMany({
         where: {
           published: true,
         },
@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
     console.log('📝 POSTS: ✅ Found', posts.length, 'posts')
 
     console.log('📝 POSTS: 🔍 Counting total posts...')
-    const totalCount = await withRetry(async () => {
-      return await prisma.post.count({
+    const totalCount = await withRetry(async (client) => {
+      return await client.post.count({
         where: {
           published: true,
         },
@@ -120,8 +120,8 @@ export async function POST(request: NextRequest) {
     console.log('📝 POSTS: 📊 Post data:', { content: content?.substring(0, 100) + '...', published })
 
     console.log('📝 POSTS: 🔍 Creating post in database...')
-    const post = await withRetry(async () => {
-      return await prisma.post.create({
+    const post = await withRetry(async (client) => {
+      return await client.post.create({
         data: {
           content,
           published,

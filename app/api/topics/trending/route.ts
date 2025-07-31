@@ -9,8 +9,8 @@ export async function GET(request: NextRequest) {
     // Try to get posts with Prisma first, fallback to raw SQL if needed
     const posts = await safeDatabaseOperation(
       // Primary operation using Prisma
-      async () => {
-        return await prisma.post.findMany({
+      async (client) => {
+        return await client.post.findMany({
           where: {
             published: true,
             createdAt: {
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
         })
       },
       // Fallback operation using raw SQL
-      async () => {
+      async (client) => {
         const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
         const result = await executeRawQuery(`
           SELECT 

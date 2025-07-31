@@ -1,30 +1,45 @@
 import { PrismaClient } from '@prisma/client'
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
+// Create a fresh Prisma client instance for each operation
+function createPrismaClient(): PrismaClient {
+  return new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
+  })
 }
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
-})
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
-
-// Enhanced retry function with exponential backoff
+// Enhanced retry function with fresh client instances
 export async function withRetry<T>(
-  operation: () => Promise<T>,
+  operation: (client: PrismaClient) => Promise<T>,
   maxRetries: number = 3,
   baseDelay: number = 100
 ): Promise<T> {
+  let client: PrismaClient | null = null
+  
   for (let i = 0; i < maxRetries; i++) {
     try {
-      return await operation()
+      // Create a fresh client for each attempt
+      client = createPrismaClient()
+      const result = await operation(client)
+      
+      // Clean up the client
+      await client.$disconnect()
+      return result
+      
     } catch (error: any) {
+      // Clean up client on error
+      if (client) {
+        try {
+          await client.$disconnect()
+        } catch (disconnectError) {
+          console.error('Error disconnecting client:', disconnectError)
+        }
+      }
+      
       const isPreparedStatementError = error?.meta?.code === '42P05' || 
                                      error?.message?.includes('prepared statement') ||
                                      error?.message?.includes('already exists')
@@ -42,20 +57,23 @@ export async function withRetry<T>(
   throw new Error('Max retries exceeded')
 }
 
-// Raw SQL helper to avoid prepared statement issues
+// Raw SQL helper with fresh client
 export async function executeRawQuery<T>(query: string, params: any[] = []): Promise<T[]> {
+  const client = createPrismaClient()
   try {
-    return await prisma.$queryRawUnsafe(query, ...params)
+    return await client.$queryRawUnsafe(query, ...params)
   } catch (error) {
     console.error('Raw query error:', error)
     throw error
+  } finally {
+    await client.$disconnect()
   }
 }
 
-// Safe database operation that uses raw SQL when needed
+// Safe database operation that uses fresh clients
 export async function safeDatabaseOperation<T>(
-  operation: () => Promise<T>,
-  fallbackOperation?: () => Promise<T>
+  operation: (client: PrismaClient) => Promise<T>,
+  fallbackOperation?: (client: PrismaClient) => Promise<T>
 ): Promise<T> {
   try {
     return await withRetry(operation, 3, 200)
@@ -63,7 +81,7 @@ export async function safeDatabaseOperation<T>(
     if (fallbackOperation) {
       console.log('Primary operation failed, trying fallback...')
       try {
-        return await fallbackOperation()
+        return await withRetry(fallbackOperation, 2, 100)
       } catch (fallbackError) {
         console.error('Fallback operation also failed:', fallbackError)
         throw fallbackError
@@ -72,6 +90,15 @@ export async function safeDatabaseOperation<T>(
     throw error
   }
 }
+
+// Legacy client for backward compatibility (not recommended for new code)
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined
+}
+
+export const prisma = globalForPrisma.prisma ?? createPrismaClient()
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 // Connection cleanup for serverless environments
 export async function cleanupPrisma() {

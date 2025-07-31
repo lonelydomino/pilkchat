@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists with retry logic
-    const existingUser = await withRetry(async () => {
-      return await prisma.user.findFirst({
+    const existingUser = await withRetry(async (client) => {
+      return await client.user.findFirst({
         where: {
           OR: [
             { email },
@@ -40,8 +40,8 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 12)
 
     // Create user with hashed password using retry logic
-    const user = await withRetry(async () => {
-      return await prisma.user.create({
+    const user = await withRetry(async (client) => {
+      return await client.user.create({
         data: {
           name,
           email,

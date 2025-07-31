@@ -20,8 +20,8 @@ export async function GET(
     console.log('USER PROFILE: Current user ID:', currentUserId)
 
     // Find user by username with retry logic
-    const user = await withRetry(async () => {
-      return await prisma.user.findUnique({
+    const user = await withRetry(async (client) => {
+      return await client.user.findUnique({
         where: { username },
         include: {
           _count: {
@@ -49,8 +49,8 @@ export async function GET(
     let isFollowing = false
     if (currentUserId && currentUserId !== user.id) {
       try {
-        const follow = await withRetry(async () => {
-          return await prisma.follows.findUnique({
+        const follow = await withRetry(async (client) => {
+          return await client.follows.findUnique({
             where: {
               followerId_followingId: {
                 followerId: currentUserId,

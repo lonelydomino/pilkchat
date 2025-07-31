@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
     let totalCount = 0
 
     if (type === 'all' || type === 'users') {
-      const users = await withRetry(async () => {
-        return await prisma.user.findMany({
+      const users = await withRetry(async (client) => {
+        return await client.user.findMany({
           where: {
             OR: [
               { name: { contains: query, mode: 'insensitive' } },
@@ -64,8 +64,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === 'all' || type === 'posts') {
-      const posts = await withRetry(async () => {
-        return await prisma.post.findMany({
+      const posts = await withRetry(async (client) => {
+        return await client.post.findMany({
           where: {
             published: true,
             content: {
@@ -102,8 +102,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === 'all' || type === 'hashtags') {
-      const hashtags = await withRetry(async () => {
-        return await prisma.hashtag.findMany({
+      const hashtags = await withRetry(async (client) => {
+        return await client.hashtag.findMany({
           where: {
             name: {
               contains: query,
@@ -126,11 +126,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count
-    totalCount = await withRetry(async () => {
+    totalCount = await withRetry(async (client) => {
       let count = 0
       
       if (type === 'all' || type === 'users') {
-        count += await prisma.user.count({
+        count += await client.user.count({
           where: {
             OR: [
               { name: { contains: query, mode: 'insensitive' } },
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
       }
       
       if (type === 'all' || type === 'posts') {
-        count += await prisma.post.count({
+        count += await client.post.count({
           where: {
             published: true,
             content: {
@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
       }
       
       if (type === 'all' || type === 'hashtags') {
-        count += await prisma.hashtag.count({
+        count += await client.hashtag.count({
           where: {
             name: {
               contains: query,

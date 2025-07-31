@@ -39,8 +39,8 @@ export const authOptions = {
           console.log('AUTH: Attempting login for:', credentials.email)
           
           // Use retry logic for database queries
-          const user = await withRetry(async () => {
-            return await prisma.user.findUnique({
+          const user = await withRetry(async (client) => {
+            return await client.user.findUnique({
               where: {
                 email: credentials.email
               }

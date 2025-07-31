@@ -26,9 +26,9 @@ export async function GET(request: NextRequest) {
 
     // Get bookmarked posts for the current user with retry logic
     console.log('📚 BOOKMARKS: 🔍 Fetching bookmarked posts...')
-    const bookmarkedPosts = await withRetry(async () => {
+    const bookmarkedPosts = await withRetry(async (client) => {
       console.log('📚 BOOKMARKS: 📊 Executing database query for user:', session.user.id)
-      return await prisma.bookmark.findMany({
+      return await client.bookmark.findMany({
         where: {
           userId: session.user.id,
         },
@@ -69,8 +69,8 @@ export async function GET(request: NextRequest) {
           console.log(`📚 BOOKMARKS: 🔍 Checking interactions for post ${index + 1}/${bookmarkedPosts.length}:`, bookmark.post.id)
           
           const [like, repost] = await Promise.all([
-            withRetry(async () => {
-              return await prisma.like.findUnique({
+            withRetry(async (client) => {
+              return await client.like.findUnique({
                 where: {
                   userId_postId: {
                     userId: session.user.id,
@@ -79,8 +79,8 @@ export async function GET(request: NextRequest) {
                 },
               })
             }, 3, 200),
-            withRetry(async () => {
-              return await prisma.repost.findUnique({
+            withRetry(async (client) => {
+              return await client.repost.findUnique({
                 where: {
                   userId_postId: {
                     userId: session.user.id,
