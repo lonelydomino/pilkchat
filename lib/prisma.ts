@@ -45,8 +45,8 @@ export async function withRetry<T>(
                                      error?.message?.includes('already exists')
       
       if (isPreparedStatementError && i < maxRetries - 1) {
-        // Longer delay for prepared statement errors to allow connection cleanup
-        const delay = baseDelay * Math.pow(2, i) + Math.random() * 200 + 500
+        // Much longer delay for prepared statement errors to allow connection cleanup
+        const delay = baseDelay * Math.pow(3, i) + Math.random() * 500 + 1000
         console.log(`Prepared statement error, retrying in ${delay}ms (attempt ${i + 1}/${maxRetries})`)
         await new Promise(resolve => setTimeout(resolve, delay))
         continue

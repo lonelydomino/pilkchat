@@ -37,7 +37,7 @@ export async function GET(
           },
         },
       })
-    }, 3, 500) // Increased delay for user profile queries
+    }, 2, 1000) // Much longer delay and fewer retries for user profile queries
 
     if (!user) {
       console.log('USER PROFILE: User not found:', username)
@@ -62,7 +62,7 @@ export async function GET(
               },
             },
           })
-        }, 2, 300) // Shorter retry for follow check
+        }, 1, 500) // Single retry with longer delay for follow check
         isFollowing = !!follow
       } catch (followError) {
         console.warn('USER PROFILE: Failed to check follow status:', followError)
