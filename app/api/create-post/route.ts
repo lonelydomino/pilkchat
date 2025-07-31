@@ -7,11 +7,15 @@ import { authOptions } from '@/auth'
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
+  let session: any = null
+  let content: string = ''
+  let published: boolean = true
+  
   try {
     console.log('📝 CREATE POST: POST request started')
     console.log('📝 CREATE POST: Request URL:', request.url)
     
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
       console.log('📝 CREATE POST: ❌ No session or user ID found')
@@ -24,7 +28,8 @@ export async function POST(request: NextRequest) {
     console.log('📝 CREATE POST: ✅ User authenticated:', session.user.id, 'Username:', session.user.username)
 
     const body = await request.json()
-    const { content, published = true } = body
+    content = body.content
+    published = body.published ?? true
 
     console.log('📝 CREATE POST: 📝 Creating post with content length:', content?.length || 0)
     console.log('📝 CREATE POST: 📊 Post data:', { content: content?.substring(0, 100) + '...', published })
@@ -69,6 +74,12 @@ export async function POST(request: NextRequest) {
     // Try a simpler approach as fallback
     try {
       console.log('📝 CREATE POST: 🔄 Trying fallback approach...')
+      
+      // Validate we have the required data
+      if (!content || !session?.user?.id) {
+        throw new Error('Missing required data for fallback')
+      }
+      
       const fallbackClient = createPrismaClient()
       const fallbackPost = await fallbackClient.post.create({
         data: {
