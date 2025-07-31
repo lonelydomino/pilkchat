@@ -57,7 +57,7 @@ export async function GET(
           return await client.follows.findUnique({
             where: {
               followerId_followingId: {
-                followerId: currentUserId,
+                followerId: currentUserId as string,
                 followingId: user.id,
               },
             },
@@ -129,7 +129,7 @@ export async function GET(
           const follow = await fallbackClient.follows.findUnique({
             where: {
               followerId_followingId: {
-                followerId: currentUserId,
+                followerId: currentUserId as string,
                 followingId: fallbackUser.id,
               },
             },
