@@ -30,7 +30,7 @@ export function CommentForm({
     setIsSubmitting(true)
     
     try {
-      const response = await fetch('/api/comments', {
+      const response = await fetch('/api/comments/drizzle', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

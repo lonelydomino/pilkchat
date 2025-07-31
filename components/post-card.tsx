@@ -54,7 +54,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
     
     setIsLiking(true)
     try {
-      const response = await fetch(`/api/posts/${post.id}/like`, {
+      const response = await fetch(`/api/posts/${post.id}/like/drizzle`, {
         method: 'POST',
       })
 
@@ -80,7 +80,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
     
     setIsReposting(true)
     try {
-      const response = await fetch(`/api/posts/${post.id}/repost`, {
+      const response = await fetch(`/api/posts/${post.id}/repost/drizzle`, {
         method: 'POST',
       })
 
@@ -106,7 +106,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
     
     setIsBookmarking(true)
     try {
-      const response = await fetch(`/api/posts/${post.id}/bookmark`, {
+      const response = await fetch(`/api/posts/${post.id}/bookmark/drizzle`, {
         method: 'POST',
       })
 
@@ -134,7 +134,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
   const fetchComments = async () => {
     setIsLoadingComments(true)
     try {
-      const response = await fetch(`/api/comments?postId=${post.id}`)
+      const response = await fetch(`/api/comments/drizzle?postId=${post.id}`)
       if (response.ok) {
         const data = await response.json()
         setComments(data.comments)

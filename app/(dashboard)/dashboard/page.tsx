@@ -42,7 +42,7 @@ export default function DashboardPage() {
       console.log('🔄 Fetching posts, attempt:', retryCount + 1)
       setError(null)
       
-      const response = await fetch('/api/fetch-posts', {
+      const response = await fetch('/api/fetch-posts-drizzle', {
         method: 'GET',
         headers: {
           'Cache-Control': 'no-cache',
