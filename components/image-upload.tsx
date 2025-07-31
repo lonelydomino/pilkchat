@@ -92,7 +92,7 @@ export function ImageUpload({
       formData.append('image', file)
       console.log('📤 CLIENT: FormData created')
 
-      const uploadUrl = '/api/cloudinary-upload?t=' + Date.now()
+      const uploadUrl = '/api/upload-image?t=' + Date.now()
       console.log('📤 CLIENT: Uploading to:', uploadUrl)
       
       const response = await fetch(uploadUrl, {
