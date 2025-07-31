@@ -9,8 +9,6 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     console.log('📚 BOOKMARKS: Request started')
-    console.log('📚 BOOKMARKS: Request URL:', request.url)
-    console.log('📚 BOOKMARKS: Request headers:', Object.fromEntries(request.headers.entries()))
     
     const session = await getServerSession(authOptions)
     
@@ -22,12 +20,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log('📚 BOOKMARKS: ✅ User authenticated:', session.user.id, 'Username:', session.user.username)
+    console.log('📚 BOOKMARKS: ✅ User authenticated:', session.user.id)
 
     // Get bookmarked posts for the current user with retry logic
     console.log('📚 BOOKMARKS: 🔍 Fetching bookmarked posts...')
     const bookmarkedPosts = await withRetry(async (client) => {
-      console.log('📚 BOOKMARKS: 📊 Executing database query for user:', session.user.id)
       return await client.bookmark.findMany({
         where: {
           userId: session.user.id,
@@ -64,10 +61,8 @@ export async function GET(request: NextRequest) {
     // Check interaction status for each post with retry logic
     console.log('📚 BOOKMARKS: 🔍 Checking interaction status for posts...')
     const postsWithInteractions = await Promise.all(
-      bookmarkedPosts.map(async (bookmark, index) => {
+      bookmarkedPosts.map(async (bookmark) => {
         try {
-          console.log(`📚 BOOKMARKS: 🔍 Checking interactions for post ${index + 1}/${bookmarkedPosts.length}:`, bookmark.post.id)
-          
           const [like, repost] = await Promise.all([
             withRetry(async (client) => {
               return await client.like.findUnique({
@@ -78,7 +73,7 @@ export async function GET(request: NextRequest) {
                   },
                 },
               })
-            }, 3, 200),
+            }, 2, 100),
             withRetry(async (client) => {
               return await client.repost.findUnique({
                 where: {
@@ -88,10 +83,8 @@ export async function GET(request: NextRequest) {
                   },
                 },
               })
-            }, 3, 200),
+            }, 2, 100),
           ])
-
-          console.log(`📚 BOOKMARKS: ✅ Post ${index + 1} interactions checked - Like: ${!!like}, Repost: ${!!repost}`)
 
           return {
             ...bookmark.post,
@@ -116,18 +109,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ posts: postsWithInteractions })
   } catch (error) {
     console.error('📚 BOOKMARKS: ❌ Error fetching bookmarks:', error)
-    console.error('📚 BOOKMARKS: ❌ Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'Unknown'
-    })
+    
+    // Return a more graceful error response
     return NextResponse.json(
-      { error: 'Failed to fetch bookmarks', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { 
+        posts: [],
+        error: 'Failed to fetch bookmarks',
+        message: 'Unable to load bookmarks at this time. Please try again later.'
+      },
+      { status: 200 } // Return 200 instead of 500 to prevent client errors
     )
   } finally {
-    console.log('📚 BOOKMARKS: 🧹 Cleaning up Prisma connection...')
-    await cleanupPrisma()
-    console.log('📚 BOOKMARKS: ✅ Cleanup completed')
+    try {
+      await cleanupPrisma()
+    } catch (cleanupError) {
+      console.error('📚 BOOKMARKS: ❌ Error during cleanup:', cleanupError)
+    }
   }
 } 

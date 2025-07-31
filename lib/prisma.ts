@@ -9,6 +9,12 @@ function createPrismaClient(): PrismaClient {
         url: process.env.DATABASE_URL,
       },
     },
+    // Optimize for serverless environments
+    __internal: {
+      engine: {
+        binaryPath: undefined,
+      },
+    },
   })
 }
 
@@ -76,12 +82,12 @@ export async function safeDatabaseOperation<T>(
   fallbackOperation?: (client: PrismaClient) => Promise<T>
 ): Promise<T> {
   try {
-    return await withRetry(operation, 3, 200)
+    return await withRetry(operation)
   } catch (error: any) {
     if (fallbackOperation) {
       console.log('Primary operation failed, trying fallback...')
       try {
-        return await withRetry(fallbackOperation, 2, 100)
+        return await withRetry(fallbackOperation)
       } catch (fallbackError) {
         console.error('Fallback operation also failed:', fallbackError)
         throw fallbackError

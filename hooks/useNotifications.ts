@@ -146,12 +146,14 @@ export function useNotifications() {
           console.error('❌ Notifications stream error:', error)
           setIsConnected(false)
           
+          // Close the current connection
+          if (eventSource) {
+            eventSource.close()
+          }
+          
           // Attempt to reconnect after 5 seconds
           setTimeout(() => {
-            if (eventSource) {
-              eventSource.close()
-              connectToStream()
-            }
+            connectToStream()
           }, 5000)
         }
       } catch (error) {

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     // Test 1: Simple user count with fresh client
     const userCount = await withRetry(async (client) => {
       return await client.user.count()
-    }, 3, 200)
+    })
     
     console.log('🧪 FRESH CLIENT TEST: User count:', userCount)
     
@@ -21,9 +21,9 @@ export async function GET(request: NextRequest) {
     
     // Test 3: Multiple operations in sequence
     const results = await Promise.all([
-      withRetry(async (client) => client.user.count(), 3, 200),
-      withRetry(async (client) => client.post.count(), 3, 200),
-      withRetry(async (client) => client.notification.count(), 3, 200),
+      withRetry(async (client) => client.user.count()),
+      withRetry(async (client) => client.post.count()),
+      withRetry(async (client) => client.notification.count()),
     ])
     
     console.log('🧪 FRESH CLIENT TEST: Multiple operations:', {

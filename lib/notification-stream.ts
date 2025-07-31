@@ -6,7 +6,9 @@ export function sendNotificationToUser(userId: string, notification: any) {
   const controller = connections.get(userId)
   if (controller) {
     try {
-      controller.enqueue(`data: ${JSON.stringify(notification)}\n\n`)
+      controller.enqueue(
+        new TextEncoder().encode(`data: ${JSON.stringify(notification)}\n\n`)
+      )
     } catch (error) {
       console.error('Error sending notification:', error)
       connections.delete(userId)

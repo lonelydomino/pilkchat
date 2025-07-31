@@ -33,7 +33,7 @@ export async function GET(
           },
         },
       })
-    }, 3, 200)
+    })
 
     if (!user) {
       console.log('USER PROFILE: User not found:', username)
@@ -58,7 +58,7 @@ export async function GET(
               },
             },
           })
-        }, 3, 200)
+        })
         isFollowing = !!follow
       } catch (followError) {
         console.warn('USER PROFILE: Failed to check follow status:', followError)

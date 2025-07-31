@@ -34,7 +34,7 @@ export default function ExplorePage() {
 
   const fetchTrendingPosts = useCallback(async () => {
     try {
-      const response = await fetch('/api/posts/trending')
+      const response = await fetch('/api/fetch-trending-posts')
       if (response.ok) {
         const data = await response.json()
         setTrendingPosts(data.posts)
