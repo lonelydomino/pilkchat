@@ -9,12 +9,6 @@ function createPrismaClient(): PrismaClient {
         url: process.env.DATABASE_URL,
       },
     },
-    // Optimize for serverless environments
-    __internal: {
-      engine: {
-        binaryPath: undefined,
-      },
-    },
   })
 }
 
