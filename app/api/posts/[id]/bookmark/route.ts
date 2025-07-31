@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
+import { withRetry, cleanupPrisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
 
 export async function POST(
   request: NextRequest,
@@ -23,9 +24,11 @@ export async function POST(
     const userId = session.user.id
 
     // Check if post exists
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
-    })
+    const post = await withRetry(async (client) => {
+      return await client.post.findUnique({
+        where: { id: postId },
+      })
+    }, 3, 200)
 
     if (!post) {
       return NextResponse.json(
@@ -35,18 +38,8 @@ export async function POST(
     }
 
     // Check if already bookmarked
-    const existingBookmark = await prisma.bookmark.findUnique({
-      where: {
-        userId_postId: {
-          userId,
-          postId,
-        },
-      },
-    })
-
-    if (existingBookmark) {
-      // Remove bookmark
-      await prisma.bookmark.delete({
+    const existingBookmark = await withRetry(async (client) => {
+      return await client.bookmark.findUnique({
         where: {
           userId_postId: {
             userId,
@@ -54,6 +47,20 @@ export async function POST(
           },
         },
       })
+    }, 3, 200)
+
+    if (existingBookmark) {
+      // Remove bookmark
+      await withRetry(async (client) => {
+        return await client.bookmark.delete({
+          where: {
+            userId_postId: {
+              userId,
+              postId,
+            },
+          },
+        })
+      }, 3, 200)
 
       return NextResponse.json({ 
         success: true, 
@@ -62,12 +69,14 @@ export async function POST(
       })
     } else {
       // Add bookmark
-      await prisma.bookmark.create({
-        data: {
-          userId,
-          postId,
-        },
-      })
+      await withRetry(async (client) => {
+        return await client.bookmark.create({
+          data: {
+            userId,
+            postId,
+          },
+        })
+      }, 3, 200)
 
       return NextResponse.json({ 
         success: true, 
@@ -81,5 +90,7 @@ export async function POST(
       { error: 'Failed to toggle bookmark' },
       { status: 500 }
     )
+  } finally {
+    await cleanupPrisma()
   }
 } 

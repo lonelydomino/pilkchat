@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
+import { withRetry, cleanupPrisma } from '@/lib/prisma'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
-
-const prisma = new PrismaClient()
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,47 +12,49 @@ export async function GET(request: NextRequest) {
     const currentUserId = session?.user?.id
 
     // Get trending posts with engagement metrics
-    const trendingPosts = await prisma.post.findMany({
-      where: {
-        published: true,
-        createdAt: {
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-        },
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            image: true,
+    const trendingPosts = await withRetry(async (client) => {
+      return await client.post.findMany({
+        where: {
+          published: true,
+          createdAt: {
+            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
           },
         },
-        _count: {
-          select: {
-            likes: true,
-            comments: true,
-            reposts: true,
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              image: true,
+            },
+          },
+          _count: {
+            select: {
+              likes: true,
+              comments: true,
+              reposts: true,
+            },
           },
         },
-      },
-      orderBy: [
-        {
-          likes: {
-            _count: 'desc',
+        orderBy: [
+          {
+            likes: {
+              _count: 'desc',
+            },
           },
-        },
-        {
-          comments: {
-            _count: 'desc',
+          {
+            comments: {
+              _count: 'desc',
+            },
           },
-        },
-        {
-          createdAt: 'desc',
-        },
-      ],
-      take: 20,
-    })
+          {
+            createdAt: 'desc',
+          },
+        ],
+        take: 20,
+      })
+    }, 3, 200)
 
     // Calculate trending score and add interaction status
     const postsWithScore = await Promise.all(
@@ -70,22 +70,26 @@ export async function GET(request: NextRequest) {
 
         if (currentUserId) {
           const [like, repost] = await Promise.all([
-            prisma.like.findUnique({
-              where: {
-                userId_postId: {
-                  userId: currentUserId,
-                  postId: post.id,
+            withRetry(async (client) => {
+              return await client.like.findUnique({
+                where: {
+                  userId_postId: {
+                    userId: currentUserId,
+                    postId: post.id,
+                  },
                 },
-              },
-            }),
-            prisma.repost.findUnique({
-              where: {
-                userId_postId: {
-                  userId: currentUserId,
-                  postId: post.id,
+              })
+            }, 3, 200),
+            withRetry(async (client) => {
+              return await client.repost.findUnique({
+                where: {
+                  userId_postId: {
+                    userId: currentUserId,
+                    postId: post.id,
+                  },
                 },
-              },
-            }),
+              })
+            }, 3, 200),
           ])
 
           isLiked = !!like
@@ -113,5 +117,7 @@ export async function GET(request: NextRequest) {
       { error: 'Failed to fetch trending posts' },
       { status: 500 }
     )
+  } finally {
+    await cleanupPrisma()
   }
 } 

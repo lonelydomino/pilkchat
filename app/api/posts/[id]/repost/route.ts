@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
+import { withRetry, cleanupPrisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
 
 export async function POST(
   request: NextRequest,
@@ -22,18 +23,8 @@ export async function POST(
     const mockUserId = session.user.id
 
     // Check if user already reposted the post
-    const existingRepost = await prisma.repost.findUnique({
-      where: {
-        userId_postId: {
-          userId: mockUserId,
-          postId: postId,
-        },
-      },
-    })
-
-    if (existingRepost) {
-      // Remove repost
-      await prisma.repost.delete({
+    const existingRepost = await withRetry(async (client) => {
+      return await client.repost.findUnique({
         where: {
           userId_postId: {
             userId: mockUserId,
@@ -41,14 +32,30 @@ export async function POST(
           },
         },
       })
+    }, 3, 200)
+
+    if (existingRepost) {
+      // Remove repost
+      await withRetry(async (client) => {
+        return await client.repost.delete({
+          where: {
+            userId_postId: {
+              userId: mockUserId,
+              postId: postId,
+            },
+          },
+        })
+      }, 3, 200)
     } else {
       // Create repost
-      await prisma.repost.create({
-        data: {
-          userId: mockUserId,
-          postId: postId,
-        },
-      })
+      await withRetry(async (client) => {
+        return await client.repost.create({
+          data: {
+            userId: mockUserId,
+            postId: postId,
+          },
+        })
+      }, 3, 200)
     }
 
     return NextResponse.json({ success: true })
@@ -58,5 +65,7 @@ export async function POST(
       { error: 'Failed to toggle repost' },
       { status: 500 }
     )
+  } finally {
+    await cleanupPrisma()
   }
 } 
