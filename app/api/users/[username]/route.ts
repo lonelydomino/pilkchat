@@ -10,12 +10,16 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { username: string } }
 ) {
+  let username: string = ''
+  let session: any = null
+  let currentUserId: string | undefined = undefined
+  
   try {
     console.log('USER PROFILE: Fetching profile for username:', params.username)
     
-    const username = params.username
-    const session = await getServerSession(authOptions)
-    const currentUserId = session?.user?.id
+    username = params.username
+    session = await getServerSession(authOptions)
+    currentUserId = session?.user?.id
 
     console.log('USER PROFILE: Current user ID:', currentUserId)
 
@@ -89,6 +93,12 @@ export async function GET(
     // Try fallback approach with direct client
     try {
       console.log('USER PROFILE: 🔄 Trying fallback approach...')
+      
+      // Validate we have the required data
+      if (!username) {
+        throw new Error('Missing username for fallback')
+      }
+      
       const fallbackClient = createPrismaClient()
       
       const fallbackUser = await fallbackClient.user.findUnique({
