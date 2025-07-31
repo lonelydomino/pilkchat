@@ -2,7 +2,7 @@ import NextAuth from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
-import { prisma, withRetry } from "@/lib/prisma"
+import { withRetry, createPrismaClient } from "@/lib/prisma"
 
 // Ensure required environment variables are available
 const requiredEnvVars = {
@@ -21,7 +21,7 @@ if (missingVars.length > 0) {
 }
 
 export const authOptions = {
-  adapter: PrismaAdapter(prisma) as any,
+  adapter: PrismaAdapter(createPrismaClient()) as any,
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -38,14 +38,14 @@ export const authOptions = {
         try {
           console.log('AUTH: Attempting login for:', credentials.email)
           
-          // Use retry logic for database queries
+          // Use retry logic for database queries with longer delays for auth
           const user = await withRetry(async (client) => {
             return await client.user.findUnique({
               where: {
                 email: credentials.email
               }
             })
-          }, 3, 200)
+          }, 2, 500) // Longer delay for auth queries
 
           if (!user || !user.password) {
             console.log('AUTH: User not found or no password:', credentials.email)
@@ -72,7 +72,46 @@ export const authOptions = {
           }
         } catch (error) {
           console.error('AUTH: Auth error:', error)
-          return null
+          
+          // Try fallback approach for auth
+          try {
+            console.log('AUTH: 🔄 Trying fallback approach for auth...')
+            const fallbackClient = createPrismaClient()
+            
+            const fallbackUser = await fallbackClient.user.findUnique({
+              where: {
+                email: credentials.email
+              }
+            })
+            
+            await fallbackClient.$disconnect()
+            
+            if (!fallbackUser || !fallbackUser.password) {
+              console.log('AUTH: User not found in fallback:', credentials.email)
+              return null
+            }
+
+            const isPasswordValid = await bcrypt.compare(
+              credentials.password,
+              fallbackUser.password
+            )
+
+            if (!isPasswordValid) {
+              console.log('AUTH: Invalid password in fallback for user:', credentials.email)
+              return null
+            }
+
+            console.log('AUTH: Authentication successful with fallback for user:', credentials.email)
+            return {
+              id: fallbackUser.id,
+              email: fallbackUser.email || '',
+              name: fallbackUser.name || '',
+              username: fallbackUser.username,
+            }
+          } catch (fallbackError) {
+            console.error('AUTH: Fallback auth also failed:', fallbackError)
+            return null
+          }
         }
       }
     })
