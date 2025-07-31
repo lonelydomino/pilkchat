@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
+import { withRetry, cleanupPrisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
 
 export async function DELETE(
   request: NextRequest,
@@ -21,12 +22,14 @@ export async function DELETE(
     }
 
     // Verify the notification belongs to the current user
-    const notification = await prisma.notification.findFirst({
-      where: {
-        id: notificationId,
-        userId: session.user.id,
-      },
-    })
+    const notification = await withRetry(async (client) => {
+      return await client.notification.findFirst({
+        where: {
+          id: notificationId,
+          userId: session.user.id,
+        },
+      })
+    }, 3, 200)
 
     if (!notification) {
       return NextResponse.json(
@@ -36,9 +39,11 @@ export async function DELETE(
     }
 
     // Delete the notification
-    await prisma.notification.delete({
-      where: { id: notificationId },
-    })
+    await withRetry(async (client) => {
+      return await client.notification.delete({
+        where: { id: notificationId },
+      })
+    }, 3, 200)
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -47,5 +52,7 @@ export async function DELETE(
       { error: 'Failed to delete notification' },
       { status: 500 }
     )
+  } finally {
+    await cleanupPrisma()
   }
 } 

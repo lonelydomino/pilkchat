@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { sendNotificationToUser } from '@/lib/notification-stream'
+import { withRetry, cleanupPrisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,31 +19,33 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const comments = await prisma.comment.findMany({
-      where: {
-        postId,
-        parentId: null, // Only get top-level comments
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            image: true,
+    const comments = await withRetry(async (client) => {
+      return await client.comment.findMany({
+        where: {
+          postId,
+          parentId: null, // Only get top-level comments
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              image: true,
+            },
+          },
+          _count: {
+            select: {
+              likes: true,
+              replies: true,
+            },
           },
         },
-        _count: {
-          select: {
-            likes: true,
-            replies: true,
-          },
+        orderBy: {
+          createdAt: 'desc',
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    })
+      })
+    }, 3, 200)
 
     // Add interaction status for each comment
     const session = await getServerSession(authOptions)
@@ -53,14 +56,16 @@ export async function GET(request: NextRequest) {
         let isLiked = false
 
         if (currentUserId) {
-          const like = await prisma.like.findUnique({
-            where: {
-              userId_commentId: {
-                userId: currentUserId,
-                commentId: comment.id,
+          const like = await withRetry(async (client) => {
+            return await client.like.findUnique({
+              where: {
+                userId_commentId: {
+                  userId: currentUserId,
+                  commentId: comment.id,
+                },
               },
-            },
-          })
+            })
+          }, 3, 200)
           isLiked = !!like
         }
 
@@ -109,57 +114,63 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the comment
-    const comment = await prisma.comment.create({
-      data: {
-        content: content.trim(),
-        authorId: session.user.id,
-        postId,
-        parentId: parentId || null,
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            image: true,
+    const comment = await withRetry(async (client) => {
+      return await client.comment.create({
+        data: {
+          content: content.trim(),
+          authorId: session.user.id,
+          postId,
+          parentId: parentId || null,
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              image: true,
+            },
+          },
+          _count: {
+            select: {
+              likes: true,
+              replies: true,
+            },
           },
         },
-        _count: {
-          select: {
-            likes: true,
-            replies: true,
-          },
-        },
-      },
-    })
+      })
+    }, 3, 200)
 
     // Get post details for notification
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
+    const post = await withRetry(async (client) => {
+      return await client.post.findUnique({
+        where: { id: postId },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+            },
           },
         },
-      },
-    })
+      })
+    }, 3, 200)
 
     // Only send notification if the post author is not the same as the comment author
     if (post && post.authorId !== session.user.id) {
       // Create notification
-      const notification = await prisma.notification.create({
-        data: {
-          type: 'comment',
-          message: `${session.user.name} commented on your post`,
-          userId: post.authorId,
-          relatedUserId: session.user.id,
-          relatedPostId: postId,
-        },
-      })
+      const notification = await withRetry(async (client) => {
+        return await client.notification.create({
+          data: {
+            type: 'comment',
+            message: `${session.user.name} commented on your post`,
+            userId: post.authorId,
+            relatedUserId: session.user.id,
+            relatedPostId: postId,
+          },
+        })
+      }, 3, 200)
 
       // Send real-time notification
       sendNotificationToUser(post.authorId, {
@@ -185,5 +196,7 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to create comment' },
       { status: 500 }
     )
+  } finally {
+    await cleanupPrisma()
   }
 } 

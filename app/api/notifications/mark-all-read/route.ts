@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
+import { withRetry, cleanupPrisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,15 +18,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark all unread notifications as read
-    await prisma.notification.updateMany({
-      where: {
-        userId: session.user.id,
-        read: false,
-      },
-      data: {
-        read: true,
-      },
-    })
+    await withRetry(async (client) => {
+      return await client.notification.updateMany({
+        where: {
+          userId: session.user.id,
+          read: false,
+        },
+        data: {
+          read: true,
+        },
+      })
+    }, 3, 200)
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -34,5 +37,7 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to mark all notifications as read' },
       { status: 500 }
     )
+  } finally {
+    await cleanupPrisma()
   }
 } 

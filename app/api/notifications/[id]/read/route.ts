@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
+import { withRetry, cleanupPrisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
 
 export async function POST(
   request: NextRequest,
@@ -21,12 +22,14 @@ export async function POST(
     }
 
     // Verify the notification belongs to the current user
-    const notification = await prisma.notification.findFirst({
-      where: {
-        id: notificationId,
-        userId: session.user.id,
-      },
-    })
+    const notification = await withRetry(async (client) => {
+      return await client.notification.findFirst({
+        where: {
+          id: notificationId,
+          userId: session.user.id,
+        },
+      })
+    }, 3, 200)
 
     if (!notification) {
       return NextResponse.json(
@@ -36,10 +39,12 @@ export async function POST(
     }
 
     // Mark as read
-    await prisma.notification.update({
-      where: { id: notificationId },
-      data: { read: true },
-    })
+    await withRetry(async (client) => {
+      return await client.notification.update({
+        where: { id: notificationId },
+        data: { read: true },
+      })
+    }, 3, 200)
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -48,5 +53,7 @@ export async function POST(
       { error: 'Failed to mark notification as read' },
       { status: 500 }
     )
+  } finally {
+    await cleanupPrisma()
   }
 } 

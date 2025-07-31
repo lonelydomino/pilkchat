@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import bcrypt from 'bcryptjs'
+import { withRetry, cleanupPrisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,10 +36,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current user with password
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { password: true },
-    })
+    const user = await withRetry(async (client) => {
+      return await client.user.findUnique({
+        where: { id: session.user.id },
+        select: { password: true },
+      })
+    }, 3, 200)
 
     if (!user || !user.password) {
       return NextResponse.json(
@@ -60,10 +63,12 @@ export async function POST(request: NextRequest) {
     const hashedNewPassword = await bcrypt.hash(newPassword, 10)
 
     // Update password
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { password: hashedNewPassword },
-    })
+    await withRetry(async (client) => {
+      return await client.user.update({
+        where: { id: session.user.id },
+        data: { password: hashedNewPassword },
+      })
+    }, 3, 200)
 
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -72,5 +77,7 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to change password' },
       { status: 500 }
     )
+  } finally {
+    await cleanupPrisma()
   }
 } 

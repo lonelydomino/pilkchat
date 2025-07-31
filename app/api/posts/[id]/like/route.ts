@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { sendNotificationToUser } from '@/lib/notification-stream'
+import { withRetry, cleanupPrisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
 
 export async function POST(
   request: NextRequest,
@@ -24,18 +25,8 @@ export async function POST(
     const userId = session.user.id
 
     // Check if already liked
-    const existingLike = await prisma.like.findUnique({
-      where: {
-        userId_postId: {
-          userId,
-          postId,
-        },
-      },
-    })
-
-    if (existingLike) {
-      // Unlike
-      await prisma.like.delete({
+    const existingLike = await withRetry(async (client) => {
+      return await client.like.findUnique({
         where: {
           userId_postId: {
             userId,
@@ -43,6 +34,20 @@ export async function POST(
           },
         },
       })
+    }, 3, 200)
+
+    if (existingLike) {
+      // Unlike
+      await withRetry(async (client) => {
+        return await client.like.delete({
+          where: {
+            userId_postId: {
+              userId,
+              postId,
+            },
+          },
+        })
+      }, 3, 200)
 
       return NextResponse.json({ 
         success: true, 
@@ -50,39 +55,45 @@ export async function POST(
       })
     } else {
       // Like
-      await prisma.like.create({
-        data: {
-          userId,
-          postId,
-        },
-      })
+      await withRetry(async (client) => {
+        return await client.like.create({
+          data: {
+            userId,
+            postId,
+          },
+        })
+      }, 3, 200)
 
       // Get post details for notification
-      const post = await prisma.post.findUnique({
-        where: { id: postId },
-        include: {
-          author: {
-            select: {
-              id: true,
-              name: true,
-              username: true,
+      const post = await withRetry(async (client) => {
+        return await client.post.findUnique({
+          where: { id: postId },
+          include: {
+            author: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+              },
             },
           },
-        },
-      })
+        })
+      }, 3, 200)
 
       // Only send notification if the post author is not the same as the user liking
       if (post && post.authorId !== userId) {
         // Create notification
-        const notification = await prisma.notification.create({
-          data: {
-            type: 'like',
-            message: `${session.user.name} liked your post`,
-            userId: post.authorId,
-            relatedUserId: userId,
-            relatedPostId: postId,
-          },
-        })
+        const notification = await withRetry(async (client) => {
+          return await client.notification.create({
+            data: {
+              type: 'like',
+              message: `${session.user.name} liked your post`,
+              userId: post.authorId,
+              relatedUserId: userId,
+              relatedPostId: postId,
+            },
+          })
+        }, 3, 200)
 
         // Send real-time notification
         sendNotificationToUser(post.authorId, {
@@ -109,5 +120,7 @@ export async function POST(
       { error: 'Failed to like/unlike post' },
       { status: 500 }
     )
+  } finally {
+    await cleanupPrisma()
   }
 } 

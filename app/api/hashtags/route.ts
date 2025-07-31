@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
+import { withRetry, cleanupPrisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
 
 // Get trending hashtags
 export async function GET(request: NextRequest) {
@@ -22,22 +23,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const hashtags = await prisma.hashtag.findMany({
-      where: whereClause,
-      include: {
-        _count: {
-          select: {
-            posts: true
+    const hashtags = await withRetry(async (client) => {
+      return await client.hashtag.findMany({
+        where: whereClause,
+        include: {
+          _count: {
+            select: {
+              posts: true
+            }
           }
-        }
-      },
-      orderBy: {
-        posts: {
-          _count: 'desc'
-        }
-      },
-      take: limit
-    })
+        },
+        orderBy: {
+          posts: {
+            _count: 'desc'
+          }
+        },
+        take: limit
+      })
+    }, 3, 200)
 
     return NextResponse.json({ hashtags })
   } catch (error) {
@@ -46,6 +49,8 @@ export async function GET(request: NextRequest) {
       { error: 'Failed to fetch hashtags' },
       { status: 500 }
     )
+  } finally {
+    await cleanupPrisma()
   }
 }
 
@@ -64,14 +69,18 @@ export async function POST(request: NextRequest) {
     const normalizedName = name.toLowerCase().trim()
     
     // Check if hashtag already exists
-    let hashtag = await prisma.hashtag.findUnique({
-      where: { name: normalizedName }
-    })
+    let hashtag = await withRetry(async (client) => {
+      return await client.hashtag.findUnique({
+        where: { name: normalizedName }
+      })
+    }, 3, 200)
 
     if (!hashtag) {
-      hashtag = await prisma.hashtag.create({
-        data: { name: normalizedName }
-      })
+      hashtag = await withRetry(async (client) => {
+        return await client.hashtag.create({
+          data: { name: normalizedName }
+        })
+      }, 3, 200)
     }
 
     return NextResponse.json({ hashtag })
@@ -81,5 +90,7 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to create hashtag' },
       { status: 500 }
     )
+  } finally {
+    await cleanupPrisma()
   }
 } 

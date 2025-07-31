@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
+import { withRetry, cleanupPrisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
 
 export async function GET(
   request: NextRequest,
@@ -21,16 +22,18 @@ export async function GET(
     const hashtagName = decodeURIComponent(params.name).toLowerCase()
 
     // Get hashtag info
-    const hashtag = await prisma.hashtag.findUnique({
-      where: { name: hashtagName },
-      include: {
-        _count: {
-          select: {
-            posts: true
+    const hashtag = await withRetry(async (client) => {
+      return await client.hashtag.findUnique({
+        where: { name: hashtagName },
+        include: {
+          _count: {
+            select: {
+              posts: true
+            }
           }
         }
-      }
-    })
+      })
+    }, 3, 200)
 
     if (!hashtag) {
       return NextResponse.json(
@@ -40,40 +43,42 @@ export async function GET(
     }
 
     // Get posts with this hashtag
-    const posts = await prisma.post.findMany({
-      where: {
-        hashtags: {
-          some: {
-            hashtag: {
-              name: hashtagName
+    const posts = await withRetry(async (client) => {
+      return await client.post.findMany({
+        where: {
+          hashtags: {
+            some: {
+              hashtag: {
+                name: hashtagName
+              }
+            }
+          },
+          published: true
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              image: true
+            }
+          },
+          _count: {
+            select: {
+              comments: true,
+              likes: true,
+              reposts: true
             }
           }
         },
-        published: true
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            image: true
-          }
+        orderBy: {
+          createdAt: 'desc'
         },
-        _count: {
-          select: {
-            comments: true,
-            likes: true,
-            reposts: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      skip: offset,
-      take: limit
-    })
+        skip: offset,
+        take: limit
+      })
+    }, 3, 200)
 
     // Add interaction status for each post
     const postsWithStatus = await Promise.all(
@@ -84,30 +89,36 @@ export async function GET(
 
         if (userId) {
           const [like, repost, bookmark] = await Promise.all([
-            prisma.like.findUnique({
-              where: {
-                userId_postId: {
-                  userId,
-                  postId: post.id
+            withRetry(async (client) => {
+              return await client.like.findUnique({
+                where: {
+                  userId_postId: {
+                    userId,
+                    postId: post.id
+                  }
                 }
-              }
-            }),
-            prisma.repost.findUnique({
-              where: {
-                userId_postId: {
-                  userId,
-                  postId: post.id
+              })
+            }, 3, 200),
+            withRetry(async (client) => {
+              return await client.repost.findUnique({
+                where: {
+                  userId_postId: {
+                    userId,
+                    postId: post.id
+                  }
                 }
-              }
-            }),
-            prisma.bookmark.findUnique({
-              where: {
-                userId_postId: {
-                  userId,
-                  postId: post.id
+              })
+            }, 3, 200),
+            withRetry(async (client) => {
+              return await client.bookmark.findUnique({
+                where: {
+                  userId_postId: {
+                    userId,
+                    postId: post.id
+                  }
                 }
-              }
-            })
+              })
+            }, 3, 200)
           ])
 
           isLiked = !!like
@@ -124,18 +135,20 @@ export async function GET(
       })
     )
 
-    const totalPosts = await prisma.post.count({
-      where: {
-        hashtags: {
-          some: {
-            hashtag: {
-              name: hashtagName
+    const totalPosts = await withRetry(async (client) => {
+      return await client.post.count({
+        where: {
+          hashtags: {
+            some: {
+              hashtag: {
+                name: hashtagName
+              }
             }
-          }
-        },
-        published: true
-      }
-    })
+          },
+          published: true
+        }
+      })
+    }, 3, 200)
 
     return NextResponse.json({
       hashtag,
@@ -153,5 +166,7 @@ export async function GET(
       { error: 'Failed to fetch hashtag posts' },
       { status: 500 }
     )
+  } finally {
+    await cleanupPrisma()
   }
 } 

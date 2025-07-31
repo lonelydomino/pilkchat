@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 import { sendNotificationToUser } from '@/lib/notification-stream'
+import { withRetry, cleanupPrisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
 
 export async function POST(
   request: NextRequest,
@@ -24,9 +25,11 @@ export async function POST(
     const currentUserId = session.user.id
 
     // Find user to follow/unfollow
-    const userToFollow = await prisma.user.findUnique({
-      where: { username },
-    })
+    const userToFollow = await withRetry(async (client) => {
+      return await client.user.findUnique({
+        where: { username },
+      })
+    }, 3, 200)
 
     if (!userToFollow) {
       return NextResponse.json(
@@ -44,18 +47,8 @@ export async function POST(
     }
 
     // Check if already following
-    const existingFollow = await prisma.follows.findUnique({
-      where: {
-        followerId_followingId: {
-          followerId: currentUserId,
-          followingId: userToFollow.id,
-        },
-      },
-    })
-
-    if (existingFollow) {
-      // Unfollow
-      await prisma.follows.delete({
+    const existingFollow = await withRetry(async (client) => {
+      return await client.follows.findUnique({
         where: {
           followerId_followingId: {
             followerId: currentUserId,
@@ -63,6 +56,20 @@ export async function POST(
           },
         },
       })
+    }, 3, 200)
+
+    if (existingFollow) {
+      // Unfollow
+      await withRetry(async (client) => {
+        return await client.follows.delete({
+          where: {
+            followerId_followingId: {
+              followerId: currentUserId,
+              followingId: userToFollow.id,
+            },
+          },
+        })
+      }, 3, 200)
 
       return NextResponse.json({ 
         success: true, 
@@ -71,22 +78,26 @@ export async function POST(
       })
     } else {
       // Follow
-      await prisma.follows.create({
-        data: {
-          followerId: currentUserId,
-          followingId: userToFollow.id,
-        },
-      })
+      await withRetry(async (client) => {
+        return await client.follows.create({
+          data: {
+            followerId: currentUserId,
+            followingId: userToFollow.id,
+          },
+        })
+      }, 3, 200)
 
       // Create notification for the user being followed
-      const notification = await prisma.notification.create({
-        data: {
-          type: 'follow',
-          message: `${session.user.name} started following you`,
-          userId: userToFollow.id,
-          relatedUserId: currentUserId,
-        },
-      })
+      const notification = await withRetry(async (client) => {
+        return await client.notification.create({
+          data: {
+            type: 'follow',
+            message: `${session.user.name} started following you`,
+            userId: userToFollow.id,
+            relatedUserId: currentUserId,
+          },
+        })
+      }, 3, 200)
 
       // Send real-time notification
       sendNotificationToUser(userToFollow.id, {
@@ -113,5 +124,7 @@ export async function POST(
       { error: 'Failed to follow/unfollow user' },
       { status: 500 }
     )
+  } finally {
+    await cleanupPrisma()
   }
 } 
