@@ -1,4 +1,5 @@
 import NextAuth from "next-auth"
+import { PrismaAdapter } from "@auth/prisma-adapter"
 import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma, withRetry } from "@/lib/prisma"
@@ -20,8 +21,7 @@ if (missingVars.length > 0) {
 }
 
 export const authOptions = {
-  // Remove PrismaAdapter temporarily to test if it's causing issues
-  // adapter: PrismaAdapter(prisma) as any,
+  adapter: PrismaAdapter(prisma) as any,
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -31,10 +31,13 @@ export const authOptions = {
       },
       async authorize(credentials: Record<"email" | "password", string> | undefined) {
         if (!credentials?.email || !credentials?.password) {
+          console.log('AUTH: Missing credentials')
           return null
         }
 
         try {
+          console.log('AUTH: Attempting login for:', credentials.email)
+          
           // Use retry logic for database queries
           const user = await withRetry(async () => {
             return await prisma.user.findUnique({
@@ -45,7 +48,7 @@ export const authOptions = {
           }, 3, 200)
 
           if (!user || !user.password) {
-            console.log('User not found or no password:', credentials.email)
+            console.log('AUTH: User not found or no password:', credentials.email)
             return null
           }
 
@@ -55,11 +58,11 @@ export const authOptions = {
           )
 
           if (!isPasswordValid) {
-            console.log('Invalid password for user:', credentials.email)
+            console.log('AUTH: Invalid password for user:', credentials.email)
             return null
           }
 
-          console.log('Authentication successful for user:', credentials.email)
+          console.log('AUTH: Authentication successful for user:', credentials.email)
           return {
             id: user.id,
             email: user.email || '', // Ensure email is never null
@@ -68,7 +71,7 @@ export const authOptions = {
             // Don't include image in JWT to avoid token size issues
           }
         } catch (error) {
-          console.error('Auth error:', error)
+          console.error('AUTH: Auth error:', error)
           return null
         }
       }
