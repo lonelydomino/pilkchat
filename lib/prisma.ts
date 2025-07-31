@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 
 // Create a fresh Prisma client instance for each operation
-function createPrismaClient(): PrismaClient {
+export function createPrismaClient(): PrismaClient {
   return new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     datasources: {
@@ -45,12 +45,21 @@ export async function withRetry<T>(
                                      error?.message?.includes('already exists')
       
       if (isPreparedStatementError && i < maxRetries - 1) {
-        // Exponential backoff with jitter
-        const delay = baseDelay * Math.pow(2, i) + Math.random() * 100
+        // Longer delay for prepared statement errors to allow connection cleanup
+        const delay = baseDelay * Math.pow(2, i) + Math.random() * 200 + 500
         console.log(`Prepared statement error, retrying in ${delay}ms (attempt ${i + 1}/${maxRetries})`)
         await new Promise(resolve => setTimeout(resolve, delay))
         continue
       }
+      
+      // For other errors, use shorter delay
+      if (i < maxRetries - 1) {
+        const delay = baseDelay * Math.pow(2, i) + Math.random() * 100
+        console.log(`Database error, retrying in ${delay}ms (attempt ${i + 1}/${maxRetries})`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+        continue
+      }
+      
       throw error
     }
   }
@@ -114,4 +123,5 @@ if (typeof window === 'undefined') {
   process.on('beforeExit', cleanupPrisma)
   process.on('SIGINT', cleanupPrisma)
   process.on('SIGTERM', cleanupPrisma)
+} 
 } 

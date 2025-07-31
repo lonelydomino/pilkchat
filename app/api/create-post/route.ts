@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { withRetry, cleanupPrisma } from '@/lib/prisma'
+import { withRetry, cleanupPrisma, createPrismaClient } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth'
 
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
           },
         },
       })
-    }, 3, 200)
+    }, 5, 300) // Increased retries and delay for create operations
 
     console.log('📝 CREATE POST: ✅ Post created successfully, ID:', post.id)
     return NextResponse.json(post)
@@ -65,10 +65,46 @@ export async function POST(request: NextRequest) {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined
     })
-    return NextResponse.json(
-      { error: 'Failed to create post', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    )
+    
+    // Try a simpler approach as fallback
+    try {
+      console.log('📝 CREATE POST: 🔄 Trying fallback approach...')
+      const fallbackClient = createPrismaClient()
+      const fallbackPost = await fallbackClient.post.create({
+        data: {
+          content,
+          published,
+          authorId: session.user.id,
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              image: true,
+            },
+          },
+          _count: {
+            select: {
+              likes: true,
+              comments: true,
+              reposts: true,
+            },
+          },
+        },
+      })
+      await fallbackClient.$disconnect()
+      
+      console.log('📝 CREATE POST: ✅ Post created with fallback, ID:', fallbackPost.id)
+      return NextResponse.json(fallbackPost)
+    } catch (fallbackError) {
+      console.error('📝 CREATE POST: ❌ Fallback also failed:', fallbackError)
+      return NextResponse.json(
+        { error: 'Failed to create post', details: 'Database connection issues. Please try again.' },
+        { status: 500 }
+      )
+    }
   } finally {
     console.log('📝 CREATE POST: 🧹 Cleaning up Prisma connection...')
     await cleanupPrisma()

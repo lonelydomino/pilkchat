@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
 
     console.log('📝 FETCH POSTS: ✅ Total count:', totalCount)
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       posts,
       pagination: {
         page,
@@ -73,6 +73,13 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(totalCount / limit),
       },
     })
+
+    // Add cache control headers to prevent caching issues
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
   } catch (error) {
     console.error('📝 FETCH POSTS: ❌ Error fetching posts:', error)
     console.error('📝 FETCH POSTS: ❌ Error details:', {
