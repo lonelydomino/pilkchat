@@ -34,7 +34,7 @@ export function CreatePost({ onPostCreated, placeholder = "What's happening?", c
 
     setIsSubmitting(true)
     try {
-      const response = await fetch('/api/posts', {
+      const response = await fetch('/api/create-post', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

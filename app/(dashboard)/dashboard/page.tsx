@@ -37,7 +37,7 @@ export default function DashboardPage() {
 
   const fetchPosts = useCallback(async () => {
     try {
-      const response = await fetch('/api/posts')
+      const response = await fetch('/api/fetch-posts')
       if (response.ok) {
         const data = await response.json()
         setPosts(data.posts)
