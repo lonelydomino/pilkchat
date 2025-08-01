@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       console.log('📝 FETCH POSTS DRIZZLE: 🔍 Posts data sample:', postsData.slice(0, 3).map(p => ({ id: p.id, hasId: !!p.id, idType: typeof p.id })))
       
       // Additional validation of the data
-      const invalidPosts = postsData.filter(p => !p || !p.id || typeof p.id !== 'string' || p.id.trim() === '')
+      const invalidPosts = postsData.filter((p: any) => !p || !p.id || typeof p.id !== 'string' || p.id.trim() === '')
       if (invalidPosts.length > 0) {
         console.warn('📝 FETCH POSTS DRIZZLE: ⚠️ Found invalid posts:', invalidPosts.length)
         console.warn('📝 FETCH POSTS DRIZZLE: ⚠️ Invalid posts sample:', invalidPosts.slice(0, 3))
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     console.log('📝 FETCH POSTS DRIZZLE: 🔍 Fetching author details...')
     const postsWithAuthors = await Promise.all(
       postsData
-        .filter(post => post && post.id) // Filter out posts without IDs before processing
+        .filter((post: any) => post && post.id) // Filter out posts without IDs before processing
         .map(async (post) => {
           const authorData = await db
             .select({
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
 
     // Transform the data to match the expected format
     const transformedPosts = postsWithAuthors
-      .filter(post => {
+      .filter((post: any) => {
         const isValid = post && post.id && typeof post.id === 'string' && post.id.trim() !== ''
         if (!isValid) {
           console.warn('📝 FETCH POSTS DRIZZLE: ⚠️ Skipping invalid post in transformation:', post)
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
                 mediaUrls = JSON.parse(post.mediaUrls)
               } catch {
                 // If JSON parsing fails, try comma-separated string
-                mediaUrls = post.mediaUrls.split(',').filter(url => url.trim() !== '')
+                mediaUrls = post.mediaUrls.split(',').filter((url: string) => url.trim() !== '')
               }
             }
           } catch (error) {
@@ -145,10 +145,10 @@ export async function GET(request: NextRequest) {
     console.log('📝 FETCH POSTS DRIZZLE: 🔍 First transformed post:', transformedPosts[0])
     console.log('📝 FETCH POSTS DRIZZLE: 🔍 First post author:', transformedPosts[0]?.author)
     console.log('📝 FETCH POSTS DRIZZLE: 🔍 All posts IDs:', transformedPosts.map(p => ({ id: p.id, hasId: !!p.id })))
-    console.log('📝 FETCH POSTS DRIZZLE: 🔍 Posts without IDs:', transformedPosts.filter(p => !p.id).length)
+          console.log('📝 FETCH POSTS DRIZZLE: 🔍 Posts without IDs:', transformedPosts.filter((p: any) => !p.id).length)
     
     // Final safety check - ensure no posts without IDs are returned
-    const finalPosts = transformedPosts.filter(post => post && post.id && typeof post.id === 'string' && post.id.trim() !== '')
+          const finalPosts = transformedPosts.filter((post: any) => post && post.id && typeof post.id === 'string' && post.id.trim() !== '')
     console.log('📝 FETCH POSTS DRIZZLE: 🔍 Final posts count:', finalPosts.length, 'out of', transformedPosts.length)
     
     const response = NextResponse.json({
