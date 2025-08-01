@@ -1,6 +1,19 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
+// Add debugging for button clicks
+const handleGetStartedClick = () => {
+  console.log('🔍 HOME: Get Started button clicked')
+  console.log('🔍 HOME: Current URL:', window.location.href)
+  console.log('🔍 HOME: About to navigate to /signup')
+}
+
+const handleSignInClick = () => {
+  console.log('🔍 HOME: Sign In button clicked')
+  console.log('🔍 HOME: Current URL:', window.location.href)
+  console.log('🔍 HOME: About to navigate to /login')
+}
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -31,12 +44,12 @@ export default function HomePage() {
             around the world in real-time.
           </p>
           <div className="flex items-center justify-center space-x-4">
-            <Link href="/signup">
+            <Link href="/signup" onClick={handleGetStartedClick}>
               <Button size="lg" className="px-8">
                 Get started
               </Button>
             </Link>
-            <Link href="/login">
+            <Link href="/login" onClick={handleSignInClick}>
               <Button variant="outline" size="lg" className="px-8">
                 Sign in
               </Button>

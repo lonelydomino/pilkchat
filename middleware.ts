@@ -15,6 +15,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // TEMPORARILY DISABLE ALL MIDDLEWARE FOR TESTING
+  console.log('🔍 MIDDLEWARE: DISABLED - allowing all requests through')
+  console.log('  Pathname:', pathname)
+  return NextResponse.next()
+
+  /*
   // Skip middleware for the home page - let users access it freely
   if (pathname === '/') {
     return NextResponse.next()
@@ -51,6 +57,7 @@ export async function middleware(request: NextRequest) {
   }
 
   return NextResponse.next()
+  */
 }
 
 export const config = {
