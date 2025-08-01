@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     console.log('📝 FETCH POSTS DRIZZLE: 🔍 Fetching posts...')
     
     // Fetch posts with Drizzle - much simpler!
-    let postsData
+    let postsData: any[] = []
     try {
       postsData = await db
         .select({
