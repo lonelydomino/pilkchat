@@ -51,7 +51,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
   console.log('🔍 PostCard author name:', post.author?.name)
   console.log('🔍 PostCard author username:', post.author?.username)
   console.log('🔍 PostCard mediaUrls:', post.mediaUrls)
-  console.log('🔍 PostCard has mediaUrls:', post.mediaUrls?.length > 0)
+  console.log('🔍 PostCard has mediaUrls:', (post.mediaUrls?.length || 0) > 0)
   const [isLiking, setIsLiking] = useState(false)
   const [isReposting, setIsReposting] = useState(false)
   const [isBookmarking, setIsBookmarking] = useState(false)

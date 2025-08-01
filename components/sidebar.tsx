@@ -43,8 +43,8 @@ export function Sidebar() {
       console.log('🔍 SIDEBAR: Session user data:', {
         name: session.user.name,
         username: session.user.username,
-        image: session.user.image,
-        hasImage: !!session.user.image
+        image: (session.user as any).image,
+        hasImage: !!(session.user as any).image
       })
     }
   }, [session])
@@ -156,9 +156,9 @@ export function Sidebar() {
         {session?.user ? (
           <div className="flex items-center space-x-3 mb-4">
             <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center overflow-hidden">
-              {session.user.image ? (
+              {(session.user as any).image ? (
                 <img 
-                  src={session.user.image} 
+                  src={(session.user as any).image} 
                   alt={session.user.name || 'Profile'} 
                   className="w-full h-full object-cover rounded-full"
                 />

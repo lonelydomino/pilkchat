@@ -85,7 +85,7 @@ export const authOptions: NextAuthOptions = {
         session.user.username = token.username as string
         // Include the user's image from the token
         if (token.picture) {
-          session.user.image = token.picture as string
+          ;(session.user as any).image = token.picture as string
           console.log('🔍 AUTH DRIZZLE: Setting session image:', token.picture)
         } else {
           console.log('🔍 AUTH DRIZZLE: No image in token')
