@@ -15,10 +15,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Skip middleware for the home page - let users access it freely
-  if (pathname === '/') {
-    return NextResponse.next()
-  }
+  // TEMPORARILY DISABLE ALL MIDDLEWARE REDIRECTS FOR TESTING
+  console.log('Middleware - Pathname:', pathname)
+  console.log('Middleware - DISABLED - allowing all requests through')
+  return NextResponse.next()
 
   // Check if user is authenticated
   const token = await getToken({ 
