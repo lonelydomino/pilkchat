@@ -62,7 +62,7 @@ export default function DashboardPage() {
         console.log('🔍 All posts authors:', data.posts?.map((p: any) => ({ id: p.id, author: p.author })))
         
         // Filter out posts without an id to prevent the error
-        const validPosts = (data.posts || []).filter(post => {
+        const validPosts = (data.posts || []).filter((post: any) => {
           const isValid = post && post.id && typeof post.id === 'string' && post.id.trim() !== ''
           if (!isValid) {
             console.warn('🔍 Skipping invalid post:', post)
@@ -236,7 +236,7 @@ export default function DashboardPage() {
                     hasMedia: p?.mediaUrls?.length > 0
                   })))
                   
-                  const validPosts = posts.filter(post => {
+                  const validPosts = posts.filter((post: any) => {
                     const isValid = post && post.id && typeof post.id === 'string' && post.id.trim() !== ''
                     if (!isValid) {
                       console.warn('🔍 Skipping invalid post:', post)
