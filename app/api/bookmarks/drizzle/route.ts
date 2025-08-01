@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       id: p.id,
       content: p.content?.substring(0, 50) + '...',
       mediaUrls: p.mediaUrls,
-      hasMediaUrls: p.mediaUrls?.length > 0,
+      hasMediaUrls: (p.mediaUrls?.length || 0) > 0,
       author: p.author?.username
     })))
 
