@@ -36,18 +36,11 @@ export default function BookmarksPage() {
   const fetchBookmarks = useCallback(async () => {
     try {
       setError(null)
-      console.log('🔍 BOOKMARKS: Fetching bookmarks...')
+
       const response = await fetch('/api/bookmarks/drizzle')
       if (response.ok) {
         const data = await response.json()
-        console.log('🔍 BOOKMARKS: Received bookmarks:', data.posts?.length || 0)
-        console.log('🔍 BOOKMARKS: Sample bookmarks:', data.posts?.slice(0, 2).map((p: any) => ({
-          id: p.id,
-          content: p.content?.substring(0, 50) + '...',
-          mediaUrls: p.mediaUrls,
-          hasMediaUrls: (p.mediaUrls?.length || 0) > 0,
-          author: p.author?.username
-        })))
+
         setBookmarkedPosts(data.posts)
       } else {
         setError('Failed to load bookmarks')

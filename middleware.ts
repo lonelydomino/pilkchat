@@ -22,13 +22,11 @@ export async function middleware(request: NextRequest) {
   })
 
   // Debug logging
-  console.log('Middleware - Pathname:', pathname)
-  console.log('Middleware - Token exists:', !!token)
-  console.log('Middleware - Token:', token ? { sub: token.sub, email: token.email } : 'No token')
+
 
   // Redirect authenticated users away from auth pages
   if (token && (pathname.startsWith('/login') || pathname.startsWith('/signup'))) {
-    console.log('Middleware - Redirecting authenticated user to dashboard')
+
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

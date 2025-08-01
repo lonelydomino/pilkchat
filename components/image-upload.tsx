@@ -53,7 +53,6 @@ export function ImageUpload({
 
   // Update preview when currentImage prop changes
   useEffect(() => {
-    console.log('🔍 IMAGE UPLOAD: currentImage prop changed:', currentImage)
     setPreview(currentImage || null)
   }, [currentImage])
 
@@ -103,32 +102,17 @@ export function ImageUpload({
 
     setIsUploading(true)
     try {
-      console.log('📤 CLIENT: Starting image upload...')
-      console.log('📤 CLIENT: File details:', {
-        name: file.name,
-        type: file.type,
-        size: file.size
-      })
-      
       const formData = new FormData()
       formData.append('image', file)
-      console.log('📤 CLIENT: FormData created')
 
       const uploadUrl = uploadType === 'post' 
         ? '/api/upload-post-image/drizzle?t=' + Date.now()
         : '/api/upload-image/drizzle?t=' + Date.now()
-      console.log('📤 CLIENT: Uploading to:', uploadUrl)
       
       const response = await fetch(uploadUrl, {
         method: 'POST',
         credentials: 'include',
         body: formData,
-      })
-      
-      console.log('📤 CLIENT: Response received:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
       })
 
       if (response.ok) {

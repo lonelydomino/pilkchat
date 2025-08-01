@@ -31,8 +31,7 @@ export default function DashboardPage() {
   const { data: session, status } = useSession()
   const [posts, setPosts] = useState<Post[]>([])
   
-  console.log('🔍 Dashboard: Session status:', status)
-  console.log('🔍 Dashboard: Session data:', session)
+  
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +41,7 @@ export default function DashboardPage() {
 
   const fetchPosts = useCallback(async (retryCount = 0) => {
     try {
-      console.log('🔄 Fetching posts, attempt:', retryCount + 1)
+
       setError(null)
       
       const response = await fetch('/api/fetch-posts-drizzle', {
@@ -56,10 +55,7 @@ export default function DashboardPage() {
       
       if (response.ok) {
         const data = await response.json()
-        console.log('✅ Posts fetched successfully:', data.posts?.length || 0, 'posts')
-        console.log('🔍 First post data:', data.posts?.[0])
-        console.log('🔍 First post author:', data.posts?.[0]?.author)
-        console.log('🔍 All posts authors:', data.posts?.map((p: any) => ({ id: p.id, author: p.author })))
+
         
         // Filter out posts without an id to prevent the error
         const validPosts = (data.posts || []).filter((post: any) => {
@@ -69,13 +65,13 @@ export default function DashboardPage() {
           }
           return isValid
         })
-        console.log('🔍 Valid posts (with id):', validPosts.length, 'out of', data.posts?.length || 0)
+
         setPosts(validPosts)
       } else {
         console.error('❌ Failed to fetch posts:', response.status, response.statusText)
         setError('Failed to load posts')
         if (retryCount < 2) {
-          console.log('🔄 Retrying fetch posts...')
+  
           setTimeout(() => fetchPosts(retryCount + 1), 1000 * (retryCount + 1))
           return
         }
@@ -84,7 +80,7 @@ export default function DashboardPage() {
       console.error('❌ Error fetching posts:', error)
       setError('Failed to load posts')
       if (retryCount < 2) {
-        console.log('🔄 Retrying fetch posts due to error...')
+
         setTimeout(() => fetchPosts(retryCount + 1), 1000 * (retryCount + 1))
         return
       }
@@ -104,14 +100,11 @@ export default function DashboardPage() {
   }, [fetchPosts])
 
   const handlePostCreated = useCallback((newPost: Post) => {
-    console.log('🔍 handlePostCreated called with:', newPost)
-    console.log('🔍 New post has ID:', newPost?.id)
-    console.log('🔍 New post has author:', newPost?.author)
-    console.log('🔍 New post has mediaUrls:', newPost?.mediaUrls)
+
     
     setPosts(prev => {
       const updatedPosts = [newPost, ...prev]
-      console.log('🔍 Updated posts array length:', updatedPosts.length)
+      
       return updatedPosts
     })
   }, [])
@@ -226,16 +219,6 @@ export default function DashboardPage() {
             <div className="space-y-6">
               {(() => {
                 try {
-                  console.log('🔍 Rendering posts:', posts.length, 'posts')
-                  console.log('🔍 Posts data:', posts.map((p, i) => ({ 
-                    index: i, 
-                    id: p?.id, 
-                    hasId: !!p?.id, 
-                    type: typeof p?.id,
-                    content: p?.content?.substring(0, 50),
-                    hasMedia: (p?.mediaUrls?.length || 0) > 0
-                  })))
-                  
                   const validPosts = posts.filter((post: any) => {
                     const isValid = post && post.id && typeof post.id === 'string' && post.id.trim() !== ''
                     if (!isValid) {
@@ -243,13 +226,6 @@ export default function DashboardPage() {
                     }
                     return isValid
                   })
-                  console.log('🔍 Valid posts after filtering:', validPosts.length, 'posts')
-                  console.log('🔍 Valid posts details:', validPosts.map((p: any) => ({ 
-                    id: p.id, 
-                    content: p.content?.substring(0, 50),
-                    hasMedia: (p.mediaUrls?.length || 0) > 0,
-                    author: p.author?.name
-                  })))
                   
                   return validPosts.map((post, index) => {
                     try {

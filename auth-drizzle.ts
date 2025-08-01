@@ -70,25 +70,19 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      console.log('🔍 AUTH DRIZZLE: JWT callback called with:', { token: token ? { sub: token.sub, email: token.email } : null, user: user ? { id: user.id, username: user.username, image: user.image } : null })
       if (user) {
         token.username = user.username
         token.picture = user.image
-        console.log('🔍 AUTH DRIZZLE: Storing in token:', { username: user.username, image: user.image })
       }
       return token
     },
     async session({ session, token }) {
-      console.log('🔍 AUTH DRIZZLE: Session callback called with:', { session: session ? { user: session.user } : null, token: token ? { sub: token.sub, username: token.username, picture: token.picture } : null })
       if (token) {
         session.user.id = token.sub!
         session.user.username = token.username as string
         // Include the user's image from the token
         if (token.picture) {
           ;(session.user as any).image = token.picture as string
-          console.log('🔍 AUTH DRIZZLE: Setting session image:', token.picture)
-        } else {
-          console.log('🔍 AUTH DRIZZLE: No image in token')
         }
       }
       return session

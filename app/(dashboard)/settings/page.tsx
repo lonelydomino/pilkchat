@@ -34,13 +34,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (session?.user?.id) {
-      console.log('🔍 SETTINGS: Session user data:', {
-        id: session.user.id,
-        name: session.user.name,
-        username: session.user.username,
-        image: (session.user as any).image,
-        hasImage: !!(session.user as any).image
-      })
+
       fetchProfile()
     }
   }, [session?.user?.id])
@@ -51,9 +45,7 @@ export default function SettingsPage() {
       if (response.ok) {
         const data = await response.json()
         setProfile(data)
-        console.log('🔍 SETTINGS: Profile data loaded:', data)
-        console.log('🔍 SETTINGS: User data:', data.user)
-        console.log('🔍 SETTINGS: Current image:', data.user?.image)
+
         setFormData({
           name: data.user?.name || '',
           username: data.user?.username || '',
@@ -80,7 +72,6 @@ export default function SettingsPage() {
   }
 
   const handleImageUpload = (url: string) => {
-    console.log('🔍 SETTINGS: Image uploaded, URL:', url)
     setFormData(prev => ({
       ...prev,
       image: url

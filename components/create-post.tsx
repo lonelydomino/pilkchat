@@ -17,8 +17,7 @@ export function CreatePost({ onPostCreated, placeholder = "What's happening?", c
   const { data: session, status } = useSession()
   const [content, setContent] = useState('')
   
-  console.log('🔍 CreatePost: Session status:', status)
-  console.log('🔍 CreatePost: Session data:', session)
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [images, setImages] = useState<string[]>([])
   const [resetImageUpload, setResetImageUpload] = useState(false)
@@ -36,9 +35,7 @@ export function CreatePost({ onPostCreated, placeholder = "What's happening?", c
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     
-    console.log('🔍 CreatePost: Submit triggered')
-    console.log('🔍 CreatePost: Session status:', status)
-    console.log('🔍 CreatePost: Session user:', session?.user)
+
     
     if (status === 'loading') {
       showToast('error', 'Please wait while we check your authentication...')
@@ -46,7 +43,7 @@ export function CreatePost({ onPostCreated, placeholder = "What's happening?", c
     }
     
     if (!session?.user?.id) {
-      console.log('🔍 CreatePost: No session or user ID found')
+
       showToast('error', 'You must be logged in to post')
       return
     }
@@ -63,7 +60,7 @@ export function CreatePost({ onPostCreated, placeholder = "What's happening?", c
         mediaUrls: images,
         userId: session?.user?.id, // Include user ID as fallback
       }
-      console.log('🔍 CreatePost: Sending request with data:', requestBody)
+
       
       const response = await fetch('/api/create-post-drizzle', {
         method: 'POST',
@@ -76,10 +73,7 @@ export function CreatePost({ onPostCreated, placeholder = "What's happening?", c
 
       if (response.ok) {
         const responseData = await response.json()
-        console.log('🔍 CreatePost: Response data:', responseData)
-        console.log('🔍 CreatePost: Post data:', responseData.post)
-        console.log('🔍 CreatePost: Post has ID:', responseData.post?.id)
-        console.log('🔍 CreatePost: Post has mediaUrls:', responseData.post?.mediaUrls)
+
         
         onPostCreated(responseData.post) // Pass only the post data, not the entire response
         setContent('')
@@ -99,14 +93,13 @@ export function CreatePost({ onPostCreated, placeholder = "What's happening?", c
   }, [content, images, session?.user?.id, onPostCreated])
 
   const handleImageUpload = (url: string) => {
-    console.log('🔍 CreatePost: Image uploaded, URL:', url)
     if (images.length >= 4) {
       showToast('error', 'Maximum 4 images allowed per post')
       return
     }
     setImages(prev => {
       const newImages = [...prev, url]
-      console.log('🔍 CreatePost: Updated images array:', newImages)
+
       return newImages
     })
   }

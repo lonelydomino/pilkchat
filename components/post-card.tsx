@@ -46,12 +46,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
     return null
   }
   
-  console.log('🔍 PostCard received post:', post)
-  console.log('🔍 PostCard author data:', post.author)
-  console.log('🔍 PostCard author name:', post.author?.name)
-  console.log('🔍 PostCard author username:', post.author?.username)
-  console.log('🔍 PostCard mediaUrls:', post.mediaUrls)
-  console.log('🔍 PostCard has mediaUrls:', (post.mediaUrls?.length || 0) > 0)
+
   const [isLiking, setIsLiking] = useState(false)
   const [isReposting, setIsReposting] = useState(false)
   const [isBookmarking, setIsBookmarking] = useState(false)
@@ -228,15 +223,12 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
   }
 
   const renderMediaGrid = () => {
-    console.log('🔍 renderMediaGrid called with mediaUrls:', post.mediaUrls)
     if (!post.mediaUrls || post.mediaUrls.length === 0) {
-      console.log('🔍 renderMediaGrid: No mediaUrls, returning null')
       return null
     }
 
     const images = post.mediaUrls
     const imageCount = images.length
-    console.log('🔍 renderMediaGrid: Rendering', imageCount, 'images')
 
     if (imageCount === 1) {
       return (

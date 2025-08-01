@@ -37,17 +37,7 @@ export function Sidebar() {
   const { unreadCount: unreadMessagesCount } = useUnreadMessages()
   const [bookmarkCount, setBookmarkCount] = useState(0)
 
-  // Debug session data
-  useEffect(() => {
-    if (session?.user) {
-      console.log('🔍 SIDEBAR: Session user data:', {
-        name: session.user.name,
-        username: session.user.username,
-        image: (session.user as any).image,
-        hasImage: !!(session.user as any).image
-      })
-    }
-  }, [session])
+
 
   const fetchBookmarkCount = async () => {
     try {
@@ -69,7 +59,6 @@ export function Sidebar() {
 
   const handleSignOut = async () => {
     try {
-      console.log('Signing out...')
       await signOut({ 
         callbackUrl: '/login',
         redirect: true 
