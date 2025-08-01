@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { signIn, useSession } from 'next-auth/react'
+import { signIn, useSession, signOut } from 'next-auth/react'
 
 // This page requires client-side rendering due to authentication and form handling
 export default function LoginPage() {
@@ -18,13 +18,21 @@ export default function LoginPage() {
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
   const { data: session, status } = useSession()
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (but be more careful about the session)
   useEffect(() => {
-    if (status === 'authenticated' && session) {
+    if (status === 'authenticated' && session?.user?.id) {
       console.log('Session authenticated, redirecting to:', callbackUrl)
       router.push(callbackUrl)
     }
   }, [session, status, router, callbackUrl])
+
+  // Clear any existing session when visiting login page
+  useEffect(() => {
+    if (status === 'authenticated' && !session?.user?.id) {
+      console.log('Clearing invalid session')
+      signOut({ redirect: false })
+    }
+  }, [status, session])
 
   // Fallback redirect mechanism
   useEffect(() => {
@@ -88,7 +96,7 @@ export default function LoginPage() {
   }
 
   // If already authenticated, show loading while redirecting
-  if (status === 'authenticated' && session) {
+  if (status === 'authenticated' && session?.user?.id) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
