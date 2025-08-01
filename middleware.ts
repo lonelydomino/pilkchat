@@ -27,19 +27,26 @@ export async function middleware(request: NextRequest) {
   })
 
   // Debug logging
-  console.log('Middleware - Pathname:', pathname)
-  console.log('Middleware - Token exists:', !!token)
-  console.log('Middleware - Token:', token ? { sub: token.sub, email: token.email } : 'No token')
+  console.log('🔍 MIDDLEWARE DEBUG:')
+  console.log('  Pathname:', pathname)
+  console.log('  Token exists:', !!token)
+  console.log('  Token sub:', token?.sub)
+  console.log('  Token email:', token?.email)
+  console.log('  Token full:', token)
+  console.log('  Token type:', typeof token)
+  console.log('  Token keys:', token ? Object.keys(token) : 'No token')
 
   // Only redirect if we're on auth pages and user is authenticated (with stricter validation)
   if (token?.sub && (pathname.startsWith('/login') || pathname.startsWith('/signup'))) {
-    console.log('Middleware - Redirecting authenticated user to dashboard')
+    console.log('🔍 MIDDLEWARE: Redirecting authenticated user to dashboard')
+    console.log('  Token sub:', token.sub)
+    console.log('  Pathname:', pathname)
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   // Only redirect if we're on protected routes and user is not authenticated
   if (!token?.sub && pathname.startsWith('/dashboard')) {
-    console.log('Middleware - Redirecting unauthenticated user to login')
+    console.log('🔍 MIDDLEWARE: Redirecting unauthenticated user to login')
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

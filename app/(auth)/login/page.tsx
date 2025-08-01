@@ -18,13 +18,13 @@ export default function LoginPage() {
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
   const { data: session, status } = useSession()
 
-  // Redirect if already authenticated (but be more careful about the session)
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user?.id) {
-      console.log('Session authenticated, redirecting to:', callbackUrl)
-      router.push(callbackUrl)
-    }
-  }, [session, status, router, callbackUrl])
+  // TEMPORARILY DISABLE CLIENT-SIDE REDIRECT FOR TESTING
+  // useEffect(() => {
+  //   if (status === 'authenticated' && session?.user?.id) {
+  //     console.log('Session authenticated, redirecting to:', callbackUrl)
+  //     router.push(callbackUrl)
+  //   }
+  // }, [session, status, router, callbackUrl])
 
   // Clear any existing session when visiting login page
   useEffect(() => {
@@ -95,17 +95,17 @@ export default function LoginPage() {
     )
   }
 
-  // If already authenticated, show loading while redirecting
-  if (status === 'authenticated' && session?.user?.id) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Redirecting...</p>
-        </div>
-      </div>
-    )
-  }
+  // TEMPORARILY DISABLE AUTHENTICATED STATE FOR TESTING
+  // if (status === 'authenticated' && session?.user?.id) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center bg-gray-50">
+  //       <div className="text-center">
+  //         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+  //         <p className="mt-2 text-gray-600">Redirecting...</p>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
