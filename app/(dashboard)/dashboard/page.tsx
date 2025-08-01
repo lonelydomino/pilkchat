@@ -233,7 +233,7 @@ export default function DashboardPage() {
                     hasId: !!p?.id, 
                     type: typeof p?.id,
                     content: p?.content?.substring(0, 50),
-                    hasMedia: p?.mediaUrls?.length > 0
+                    hasMedia: (p?.mediaUrls?.length || 0) > 0
                   })))
                   
                   const validPosts = posts.filter((post: any) => {
@@ -247,7 +247,7 @@ export default function DashboardPage() {
                   console.log('🔍 Valid posts details:', validPosts.map((p: any) => ({ 
                     id: p.id, 
                     content: p.content?.substring(0, 50),
-                    hasMedia: p.mediaUrls?.length > 0,
+                    hasMedia: (p.mediaUrls?.length || 0) > 0,
                     author: p.author?.name
                   })))
                   
