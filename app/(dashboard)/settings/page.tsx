@@ -38,8 +38,8 @@ export default function SettingsPage() {
         id: session.user.id,
         name: session.user.name,
         username: session.user.username,
-        image: session.user.image,
-        hasImage: !!session.user.image
+        image: (session.user as any).image,
+        hasImage: !!(session.user as any).image
       })
       fetchProfile()
     }
