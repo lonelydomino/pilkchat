@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
         createdAt: posts.createdAt,
         updatedAt: posts.updatedAt,
         authorId: posts.authorId,
+        mediaUrls: posts.mediaUrls,
       })
       .from(posts)
       .where(eq(posts.published, true))
@@ -34,6 +35,12 @@ export async function GET(request: NextRequest) {
       .limit(20)
 
     console.log('📈 TRENDING POSTS DRIZZLE: ✅ Found', trendingPosts.length, 'posts')
+    console.log('📈 TRENDING POSTS DRIZZLE: 🔍 Sample posts with mediaUrls:', trendingPosts.slice(0, 3).map(p => ({
+      id: p.id,
+      content: p.content?.substring(0, 50) + '...',
+      mediaUrls: p.mediaUrls,
+      hasMediaUrls: p.mediaUrls?.length > 0
+    })))
 
     if (trendingPosts.length === 0) {
       console.log('📈 TRENDING POSTS DRIZZLE: ✅ No trending posts found')
@@ -143,6 +150,13 @@ export async function GET(request: NextRequest) {
     )
 
     console.log('📈 TRENDING POSTS DRIZZLE: ✅ Posts with interactions prepared')
+    console.log('📈 TRENDING POSTS DRIZZLE: 🔍 Final posts sample:', postsWithInteractions.slice(0, 2).map(p => ({
+      id: p.id,
+      content: p.content?.substring(0, 50) + '...',
+      mediaUrls: p.mediaUrls,
+      hasMediaUrls: p.mediaUrls?.length > 0,
+      author: p.author?.username
+    })))
 
     return NextResponse.json({
       posts: postsWithInteractions,

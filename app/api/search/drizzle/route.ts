@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
           createdAt: posts.createdAt,
           updatedAt: posts.updatedAt,
           authorId: posts.authorId,
+          mediaUrls: posts.mediaUrls,
           author: {
             id: users.id,
             name: users.name,

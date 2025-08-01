@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Send, Image as ImageIcon, X } from 'lucide-react'
@@ -21,6 +21,17 @@ export function CreatePost({ onPostCreated, placeholder = "What's happening?", c
   console.log('🔍 CreatePost: Session data:', session)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [images, setImages] = useState<string[]>([])
+  const [resetImageUpload, setResetImageUpload] = useState(false)
+
+  // Reset the resetImageUpload state after a short delay
+  useEffect(() => {
+    if (resetImageUpload) {
+      const timer = setTimeout(() => {
+        setResetImageUpload(false)
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [resetImageUpload])
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,6 +84,7 @@ export function CreatePost({ onPostCreated, placeholder = "What's happening?", c
         onPostCreated(responseData.post) // Pass only the post data, not the entire response
         setContent('')
         setImages([])
+        setResetImageUpload(true) // Trigger reset of ImageUpload component
         showToast('success', 'Post created successfully!')
       } else {
         const error = await response.json()
@@ -172,6 +184,7 @@ export function CreatePost({ onPostCreated, placeholder = "What's happening?", c
                 placeholder="Add image"
                 maxSize={5}
                 uploadType="post"
+                reset={resetImageUpload}
               />
               <span className="text-xs text-gray-400">
                 {images.length}/4 images

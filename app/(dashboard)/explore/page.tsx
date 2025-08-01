@@ -34,9 +34,18 @@ export default function ExplorePage() {
 
   const fetchTrendingPosts = useCallback(async () => {
     try {
+      console.log('🔍 EXPLORE: Fetching trending posts...')
       const response = await fetch('/api/posts/trending/drizzle')
       if (response.ok) {
         const data = await response.json()
+        console.log('🔍 EXPLORE: Received trending posts:', data.posts?.length || 0)
+        console.log('🔍 EXPLORE: Sample posts:', data.posts?.slice(0, 2).map(p => ({
+          id: p.id,
+          content: p.content?.substring(0, 50) + '...',
+          mediaUrls: p.mediaUrls,
+          hasMediaUrls: p.mediaUrls?.length > 0,
+          author: p.author?.username
+        })))
         setTrendingPosts(data.posts)
       }
     } catch (error) {

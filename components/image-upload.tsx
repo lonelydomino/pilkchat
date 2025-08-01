@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Camera, X, Upload, Image as ImageIcon, Plus } from 'lucide-react'
 import { showToast } from './toast'
@@ -17,6 +17,7 @@ interface ImageUploadProps {
   placeholder?: string
   variant?: 'default' | 'compact' | 'button'
   uploadType?: 'profile' | 'post' // New prop to determine upload type
+  reset?: boolean // New prop to reset the component state
 }
 
 export function ImageUpload({
@@ -30,12 +31,25 @@ export function ImageUpload({
   allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'],
   placeholder = 'Upload image',
   variant = 'default',
-  uploadType = 'profile'
+  uploadType = 'profile',
+  reset = false
 }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [preview, setPreview] = useState<string | null>(currentImage || null)
   const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Reset component state when reset prop is true
+  useEffect(() => {
+    if (reset) {
+      setPreview(null)
+      setIsUploading(false)
+      setIsDragOver(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }, [reset])
 
   const getSizeClasses = () => {
     switch (size) {

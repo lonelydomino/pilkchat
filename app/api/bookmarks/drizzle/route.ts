@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
         createdAt: posts.createdAt,
         updatedAt: posts.updatedAt,
         authorId: posts.authorId,
+        mediaUrls: posts.mediaUrls,
         author: {
           id: users.id,
           name: users.name,
@@ -53,6 +54,13 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(bookmarks.createdAt))
 
     console.log('🔖 BOOKMARKS DRIZZLE: ✅ Found', bookmarkedPosts.length, 'bookmarked posts')
+    console.log('🔖 BOOKMARKS DRIZZLE: 🔍 Sample bookmarked posts with mediaUrls:', bookmarkedPosts.slice(0, 3).map(p => ({
+      id: p.id,
+      content: p.content?.substring(0, 50) + '...',
+      mediaUrls: p.mediaUrls,
+      hasMediaUrls: p.mediaUrls?.length > 0,
+      author: p.author?.username
+    })))
 
     // Get interaction counts and status for each post
     const postsWithInteractions = await Promise.all(

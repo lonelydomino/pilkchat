@@ -61,6 +61,7 @@ export async function GET(
         createdAt: posts.createdAt,
         updatedAt: posts.updatedAt,
         authorId: posts.authorId,
+        mediaUrls: posts.mediaUrls,
         author: {
           id: users.id,
           name: users.name,
