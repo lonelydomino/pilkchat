@@ -20,6 +20,7 @@ export async function middleware(request: NextRequest) {
   console.log('Middleware - DISABLED - allowing all requests through')
   return NextResponse.next()
 
+  /*
   // Check if user is authenticated
   const token = await getToken({ 
     req: request, 
@@ -44,6 +45,7 @@ export async function middleware(request: NextRequest) {
   }
 
   return NextResponse.next()
+  */
 }
 
 export const config = {
