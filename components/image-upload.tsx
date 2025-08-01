@@ -51,6 +51,12 @@ export function ImageUpload({
     }
   }, [reset])
 
+  // Update preview when currentImage prop changes
+  useEffect(() => {
+    console.log('🔍 IMAGE UPLOAD: currentImage prop changed:', currentImage)
+    setPreview(currentImage || null)
+  }, [currentImage])
+
   const getSizeClasses = () => {
     switch (size) {
       case 'sm':

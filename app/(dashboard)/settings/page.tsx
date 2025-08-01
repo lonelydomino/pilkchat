@@ -34,6 +34,13 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (session?.user?.id) {
+      console.log('🔍 SETTINGS: Session user data:', {
+        id: session.user.id,
+        name: session.user.name,
+        username: session.user.username,
+        image: session.user.image,
+        hasImage: !!session.user.image
+      })
       fetchProfile()
     }
   }, [session?.user?.id])
@@ -44,13 +51,16 @@ export default function SettingsPage() {
       if (response.ok) {
         const data = await response.json()
         setProfile(data)
+        console.log('🔍 SETTINGS: Profile data loaded:', data)
+        console.log('🔍 SETTINGS: User data:', data.user)
+        console.log('🔍 SETTINGS: Current image:', data.user?.image)
         setFormData({
-          name: data.name || '',
-          username: data.username || '',
-          bio: data.bio || '',
-          location: data.location || '',
-          website: data.website || '',
-          image: data.image || '',
+          name: data.user?.name || '',
+          username: data.user?.username || '',
+          bio: data.user?.bio || '',
+          location: data.user?.location || '',
+          website: data.user?.website || '',
+          image: data.user?.image || '',
         })
       }
     } catch (error) {
@@ -70,6 +80,7 @@ export default function SettingsPage() {
   }
 
   const handleImageUpload = (url: string) => {
+    console.log('🔍 SETTINGS: Image uploaded, URL:', url)
     setFormData(prev => ({
       ...prev,
       image: url
@@ -165,6 +176,11 @@ export default function SettingsPage() {
                 variant="default"
                 placeholder="Upload profile picture"
               />
+              {formData.image && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Current image: {formData.image.substring(0, 50)}...
+                </p>
+              )}
             </div>
           </div>
 

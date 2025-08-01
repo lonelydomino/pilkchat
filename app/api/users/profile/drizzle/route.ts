@@ -135,6 +135,14 @@ export async function GET(request: NextRequest) {
 
     const user = userData[0]
     console.log('👤 PROFILE UPDATE DRIZZLE: ✅ User profile fetched')
+    console.log('👤 PROFILE UPDATE DRIZZLE: 🔍 User data:', {
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      image: user.image,
+      hasImage: !!user.image,
+      imageLength: user.image?.length || 0
+    })
 
     return NextResponse.json({
       user
