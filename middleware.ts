@@ -15,6 +15,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Skip middleware for the home page - let users access it freely
+  if (pathname === '/') {
+    return NextResponse.next()
+  }
+
   // Check if user is authenticated
   const token = await getToken({ 
     req: request, 
@@ -22,15 +27,17 @@ export async function middleware(request: NextRequest) {
   })
 
   // Debug logging
+  console.log('Middleware - Pathname:', pathname)
+  console.log('Middleware - Token exists:', !!token)
+  console.log('Middleware - Token:', token ? { sub: token.sub, email: token.email } : 'No token')
 
-
-  // Redirect authenticated users away from auth pages
+  // Only redirect if we're on auth pages and user is authenticated
   if (token && (pathname.startsWith('/login') || pathname.startsWith('/signup'))) {
-
+    console.log('Middleware - Redirecting authenticated user to dashboard')
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Redirect unauthenticated users to login for protected routes
+  // Only redirect if we're on protected routes and user is not authenticated
   if (!token && pathname.startsWith('/dashboard')) {
     console.log('Middleware - Redirecting unauthenticated user to login')
     return NextResponse.redirect(new URL('/login', request.url))
