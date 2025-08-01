@@ -165,13 +165,13 @@ export async function POST(request: NextRequest) {
     try {
       if (post.mediaUrls && Array.isArray(post.mediaUrls)) {
         parsedMediaUrls = post.mediaUrls
-      } else if (post.mediaUrls && typeof post.mediaUrls === 'string' && post.mediaUrls.trim() !== '') {
+      } else if (post.mediaUrls && typeof post.mediaUrls === 'string' && (post.mediaUrls as string).trim() !== '') {
         // Try to parse as JSON first, then as comma-separated string
         try {
-          parsedMediaUrls = JSON.parse(post.mediaUrls)
+          parsedMediaUrls = JSON.parse(post.mediaUrls as string)
         } catch {
           // If JSON parsing fails, try comma-separated string
-          parsedMediaUrls = post.mediaUrls.split(',').filter(url => url.trim() !== '')
+          parsedMediaUrls = (post.mediaUrls as string).split(',').filter(url => url.trim() !== '')
         }
       }
     } catch (error) {
