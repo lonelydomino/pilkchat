@@ -15,12 +15,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // TEMPORARILY DISABLE ALL MIDDLEWARE REDIRECTS FOR TESTING
-  console.log('Middleware - Pathname:', pathname)
-  console.log('Middleware - DISABLED - allowing all requests through')
-  return NextResponse.next()
+  // Skip middleware for the home page - let users access it freely
+  if (pathname === '/') {
+    return NextResponse.next()
+  }
 
-  /*
   // Check if user is authenticated
   const token = await getToken({ 
     req: request, 
@@ -32,20 +31,19 @@ export async function middleware(request: NextRequest) {
   console.log('Middleware - Token exists:', !!token)
   console.log('Middleware - Token:', token ? { sub: token.sub, email: token.email } : 'No token')
 
-  // Only redirect if we're on auth pages and user is authenticated
-  if (token && (pathname.startsWith('/login') || pathname.startsWith('/signup'))) {
+  // Only redirect if we're on auth pages and user is authenticated (with stricter validation)
+  if (token?.sub && (pathname.startsWith('/login') || pathname.startsWith('/signup'))) {
     console.log('Middleware - Redirecting authenticated user to dashboard')
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   // Only redirect if we're on protected routes and user is not authenticated
-  if (!token && pathname.startsWith('/dashboard')) {
+  if (!token?.sub && pathname.startsWith('/dashboard')) {
     console.log('Middleware - Redirecting unauthenticated user to login')
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return NextResponse.next()
-  */
 }
 
 export const config = {
