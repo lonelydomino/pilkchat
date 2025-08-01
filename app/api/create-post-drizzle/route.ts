@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       .insert(posts)
       .values({
         ...postData,
-        mediaUrls: postData.mediaUrls as string, // Explicitly cast as string
+        mediaUrls: postData.mediaUrls as string[], // Cast as string array
       })
       .returning({
         id: posts.id,
