@@ -23,10 +23,12 @@ export function useUnreadMessages() {
 
     const fetchUnreadCount = async () => {
       try {
-        const response = await fetch('/api/messages/unread-count/drizzle')
+        const response = await fetch('/api/messages/unread-count/drizzle', {
+          credentials: 'include'
+        })
         if (response.ok) {
           const data = await response.json()
-          setUnreadCount(data.count)
+          setUnreadCount(data.count || 0)
         }
       } catch (error) {
         console.error('Error fetching unread messages count:', error)
