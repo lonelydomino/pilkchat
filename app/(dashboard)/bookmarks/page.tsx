@@ -41,7 +41,7 @@ export default function BookmarksPage() {
       if (response.ok) {
         const data = await response.json()
         console.log('🔍 BOOKMARKS: Received bookmarks:', data.posts?.length || 0)
-        console.log('🔍 BOOKMARKS: Sample bookmarks:', data.posts?.slice(0, 2).map(p => ({
+        console.log('🔍 BOOKMARKS: Sample bookmarks:', data.posts?.slice(0, 2).map((p: any) => ({
           id: p.id,
           content: p.content?.substring(0, 50) + '...',
           mediaUrls: p.mediaUrls,

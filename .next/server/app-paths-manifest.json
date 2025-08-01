@@ -1,7 +1,6 @@
 {
-  "/api/notifications/unread-count/drizzle/route": "app/api/notifications/unread-count/drizzle/route.js",
   "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/api/messages/unread-count/drizzle/route": "app/api/messages/unread-count/drizzle/route.js",
+  "/not-found": "app/not-found.js",
   "/(dashboard)/notifications/page": "app/(dashboard)/notifications/page.js",
   "/(dashboard)/bookmarks/page": "app/(dashboard)/bookmarks/page.js",
   "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",

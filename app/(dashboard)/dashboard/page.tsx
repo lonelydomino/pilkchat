@@ -59,7 +59,7 @@ export default function DashboardPage() {
         console.log('✅ Posts fetched successfully:', data.posts?.length || 0, 'posts')
         console.log('🔍 First post data:', data.posts?.[0])
         console.log('🔍 First post author:', data.posts?.[0]?.author)
-        console.log('🔍 All posts authors:', data.posts?.map(p => ({ id: p.id, author: p.author })))
+        console.log('🔍 All posts authors:', data.posts?.map((p: any) => ({ id: p.id, author: p.author })))
         
         // Filter out posts without an id to prevent the error
         const validPosts = (data.posts || []).filter(post => {
@@ -244,7 +244,7 @@ export default function DashboardPage() {
                     return isValid
                   })
                   console.log('🔍 Valid posts after filtering:', validPosts.length, 'posts')
-                  console.log('🔍 Valid posts details:', validPosts.map(p => ({ 
+                  console.log('🔍 Valid posts details:', validPosts.map((p: any) => ({ 
                     id: p.id, 
                     content: p.content?.substring(0, 50),
                     hasMedia: p.mediaUrls?.length > 0,
