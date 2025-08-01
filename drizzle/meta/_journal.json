@@ -15,6 +15,13 @@
       "when": 1754015386276,
       "tag": "0001_small_marrow",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1754036303919,
+      "tag": "0002_slippery_kree",
+      "breakpoints": true
     }
   ]
 }

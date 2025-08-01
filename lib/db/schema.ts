@@ -49,6 +49,16 @@ export const likes = pgTable('likes', {
   userIdPostIdPk: primaryKey({ columns: [table.userId, table.postId] }),
 }))
 
+// Comment likes table
+export const commentLikes = pgTable('comment_likes', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  createdAt: timestamp('createdAt').defaultNow(),
+  userId: text('userId').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  commentId: text('commentId').notNull().references(() => comments.id, { onDelete: 'cascade' }),
+}, (table) => ({
+  userIdCommentIdPk: primaryKey({ columns: [table.userId, table.commentId] }),
+}))
+
 // Reposts table
 export const reposts = pgTable('reposts', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -176,6 +186,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   posts: many(posts),
   comments: many(comments),
   likes: many(likes),
+  commentLikes: many(commentLikes),
   reposts: many(reposts),
   bookmarks: many(bookmarks),
   followers: many(follows, { relationName: 'UserFollowers' }),
@@ -213,7 +224,7 @@ export const commentsRelations = relations(comments, ({ one, many }) => ({
     references: [comments.id],
   }),
   replies: many(comments),
-  likes: many(likes),
+  likes: many(commentLikes),
 }))
 
 export const likesRelations = relations(likes, ({ one }) => ({
@@ -224,6 +235,17 @@ export const likesRelations = relations(likes, ({ one }) => ({
   post: one(posts, {
     fields: [likes.postId],
     references: [posts.id],
+  }),
+}))
+
+export const commentLikesRelations = relations(commentLikes, ({ one }) => ({
+  user: one(users, {
+    fields: [commentLikes.userId],
+    references: [users.id],
+  }),
+  comment: one(comments, {
+    fields: [commentLikes.commentId],
+    references: [comments.id],
   }),
 }))
 
