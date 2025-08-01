@@ -53,7 +53,7 @@ export default function ConversationPage() {
 
   const fetchConversation = useCallback(async () => {
     try {
-      const response = await fetch('/api/conversations')
+      const response = await fetch('/api/conversations/drizzle')
       if (response.ok) {
         const data = await response.json()
         const conv = data.conversations.find((c: any) => c.id === conversationId)
@@ -71,7 +71,7 @@ export default function ConversationPage() {
 
   const fetchMessages = useCallback(async () => {
     try {
-      const response = await fetch(`/api/conversations/${conversationId}/messages`)
+      const response = await fetch(`/api/conversations/${conversationId}/messages/drizzle`)
       if (response.ok) {
         const data = await response.json()
         setMessages(data.messages)
@@ -111,7 +111,7 @@ export default function ConversationPage() {
 
     setIsSending(true)
     try {
-      const response = await fetch(`/api/conversations/${conversationId}/messages`, {
+      const response = await fetch(`/api/conversations/${conversationId}/messages/drizzle`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

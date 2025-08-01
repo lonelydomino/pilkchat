@@ -14,15 +14,28 @@ interface CreatePostProps {
 }
 
 export function CreatePost({ onPostCreated, placeholder = "What's happening?", className = "" }: CreatePostProps) {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [content, setContent] = useState('')
+  
+  console.log('🔍 CreatePost: Session status:', status)
+  console.log('🔍 CreatePost: Session data:', session)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [images, setImages] = useState<string[]>([])
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     
+    console.log('🔍 CreatePost: Submit triggered')
+    console.log('🔍 CreatePost: Session status:', status)
+    console.log('🔍 CreatePost: Session user:', session?.user)
+    
+    if (status === 'loading') {
+      showToast('error', 'Please wait while we check your authentication...')
+      return
+    }
+    
     if (!session?.user?.id) {
+      console.log('🔍 CreatePost: No session or user ID found')
       showToast('error', 'You must be logged in to post')
       return
     }
@@ -34,20 +47,30 @@ export function CreatePost({ onPostCreated, placeholder = "What's happening?", c
 
     setIsSubmitting(true)
     try {
+      const requestBody = {
+        content: content.trim(),
+        mediaUrls: images,
+        userId: session?.user?.id, // Include user ID as fallback
+      }
+      console.log('🔍 CreatePost: Sending request with data:', requestBody)
+      
       const response = await fetch('/api/create-post-drizzle', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          content: content.trim(),
-          mediaUrls: images,
-        }),
+        credentials: 'include', // Ensure cookies are sent
+        body: JSON.stringify(requestBody),
       })
 
       if (response.ok) {
-        const newPost = await response.json()
-        onPostCreated(newPost)
+        const responseData = await response.json()
+        console.log('🔍 CreatePost: Response data:', responseData)
+        console.log('🔍 CreatePost: Post data:', responseData.post)
+        console.log('🔍 CreatePost: Post has ID:', responseData.post?.id)
+        console.log('🔍 CreatePost: Post has mediaUrls:', responseData.post?.mediaUrls)
+        
+        onPostCreated(responseData.post) // Pass only the post data, not the entire response
         setContent('')
         setImages([])
         showToast('success', 'Post created successfully!')
@@ -64,11 +87,16 @@ export function CreatePost({ onPostCreated, placeholder = "What's happening?", c
   }, [content, images, session?.user?.id, onPostCreated])
 
   const handleImageUpload = (url: string) => {
+    console.log('🔍 CreatePost: Image uploaded, URL:', url)
     if (images.length >= 4) {
       showToast('error', 'Maximum 4 images allowed per post')
       return
     }
-    setImages(prev => [...prev, url])
+    setImages(prev => {
+      const newImages = [...prev, url]
+      console.log('🔍 CreatePost: Updated images array:', newImages)
+      return newImages
+    })
   }
 
   const handleImageRemove = (index: number) => {
@@ -77,6 +105,35 @@ export function CreatePost({ onPostCreated, placeholder = "What's happening?", c
 
   const remainingChars = 280 - content.length
   const isOverLimit = remainingChars < 0
+
+  // Show loading state while session is loading
+  if (status === 'loading') {
+    return (
+      <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
+        <div className="animate-pulse space-y-4">
+          <div className="h-20 bg-gray-200 rounded"></div>
+          <div className="h-10 bg-gray-200 rounded w-1/4"></div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show login prompt if not authenticated
+  if (!session?.user?.id) {
+    return (
+      <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
+        <div className="text-center py-8">
+          <div className="text-gray-400 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Please log in</h3>
+          <p className="text-gray-500">You need to be logged in to create posts</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
@@ -114,6 +171,7 @@ export function CreatePost({ onPostCreated, placeholder = "What's happening?", c
                 aspectRatio="auto"
                 placeholder="Add image"
                 maxSize={5}
+                uploadType="post"
               />
               <span className="text-xs text-gray-400">
                 {images.length}/4 images

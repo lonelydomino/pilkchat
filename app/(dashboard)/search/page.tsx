@@ -73,7 +73,7 @@ export default function SearchPage() {
         type: type,
       })
       
-      const response = await fetch(`/api/search?${params}`)
+      const response = await fetch(`/api/search/drizzle?${params}`)
       if (response.ok) {
         const data = await response.json()
         setSearchResults(data.results || [])
@@ -100,7 +100,7 @@ export default function SearchPage() {
 
   const handleFollow = async (userId: string, username: string) => {
     try {
-      const response = await fetch(`/api/users/${username}/follow`, {
+      const response = await fetch(`/api/users/${username}/follow/drizzle`, {
         method: 'POST',
       })
 

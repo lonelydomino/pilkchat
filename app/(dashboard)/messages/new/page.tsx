@@ -33,7 +33,7 @@ export default function NewMessagePage() {
 
     setIsSearching(true)
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&type=users`)
+      const response = await fetch(`/api/search/drizzle?q=${encodeURIComponent(query)}&type=users`)
       if (response.ok) {
         const data = await response.json()
         const users = data.results
@@ -69,7 +69,7 @@ export default function NewMessagePage() {
 
     setIsCreating(true)
     try {
-      const response = await fetch('/api/conversations', {
+      const response = await fetch('/api/conversations/drizzle', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer, varchar, primaryKey } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, boolean, integer, varchar, primaryKey, PgTableWithColumns } from 'drizzle-orm/pg-core'
 import { relations } from 'drizzle-orm'
 
 // Users table
@@ -25,10 +25,11 @@ export const posts = pgTable('posts', {
   createdAt: timestamp('createdAt').defaultNow(),
   updatedAt: timestamp('updatedAt').defaultNow(),
   authorId: text('authorId').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  mediaUrls: text('mediaUrls').array(), // Array of image URLs
 })
 
 // Comments table
-export const comments = pgTable('comments', {
+export const comments: PgTableWithColumns<any> = pgTable('comments', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   content: text('content').notNull(),
   createdAt: timestamp('createdAt').defaultNow(),

@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth-drizzle'
 import { db } from '@/lib/db'
-import { messages, users, conversationParticipants } from '@/lib/db/schema'
-import { eq, and, desc } from 'drizzle-orm'
+import { messages, users, conversationParticipants, conversations } from '@/lib/db/schema'
+import { eq, and, desc, isNull } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,7 +36,7 @@ export async function GET(
         and(
           eq(conversationParticipants.conversationId, conversationId),
           eq(conversationParticipants.userId, userId),
-          eq(conversationParticipants.leftAt, null)
+          isNull(conversationParticipants.leftAt)
         )
       )
       .limit(1)
@@ -57,23 +57,38 @@ export async function GET(
         content: messages.content,
         createdAt: messages.createdAt,
         updatedAt: messages.updatedAt,
-        sender: {
-          id: users.id,
-          name: users.name,
-          username: users.username,
-          image: users.image,
-        },
+        senderId: messages.senderId,
       })
       .from(messages)
-      .innerJoin(users, eq(messages.senderId, users.id))
       .where(eq(messages.conversationId, conversationId))
       .orderBy(desc(messages.createdAt))
       .limit(50) // Limit to recent messages
 
     console.log('💬 MESSAGES DRIZZLE: ✅ Found', messagesData.length, 'messages')
 
+    // Get sender information for each message
+    const messagesWithSenders = await Promise.all(
+      messagesData.map(async (message) => {
+        const senderData = await db
+          .select({
+            id: users.id,
+            name: users.name,
+            username: users.username,
+            image: users.image,
+          })
+          .from(users)
+          .where(eq(users.id, message.senderId))
+          .limit(1)
+
+        return {
+          ...message,
+          sender: senderData[0] || null,
+        }
+      })
+    )
+
     // Reverse the order to show oldest first
-    const messagesInOrder = messagesData.reverse()
+    const messagesInOrder = messagesWithSenders.reverse()
 
     return NextResponse.json({
       messages: messagesInOrder
@@ -130,7 +145,7 @@ export async function POST(
         and(
           eq(conversationParticipants.conversationId, conversationId),
           eq(conversationParticipants.userId, userId),
-          eq(conversationParticipants.leftAt, null)
+          isNull(conversationParticipants.leftAt)
         )
       )
       .limit(1)
@@ -157,12 +172,7 @@ export async function POST(
         content: messages.content,
         createdAt: messages.createdAt,
         updatedAt: messages.updatedAt,
-        sender: {
-          id: users.id,
-          name: users.name,
-          username: users.username,
-          image: users.image,
-        },
+        senderId: messages.senderId,
       })
 
     console.log('💬 MESSAGES DRIZZLE: ✅ Message created with ID:', newMessage.id)

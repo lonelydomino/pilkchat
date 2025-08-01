@@ -41,7 +41,7 @@ export default function MessagesPage() {
   const fetchConversations = useCallback(async () => {
     try {
       setError(null)
-      const response = await fetch('/api/conversations')
+      const response = await fetch('/api/conversations/drizzle')
       
       if (response.ok) {
         const data = await response.json()

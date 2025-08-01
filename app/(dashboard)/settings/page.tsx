@@ -40,7 +40,7 @@ export default function SettingsPage() {
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('/api/users/profile')
+      const response = await fetch('/api/users/profile/drizzle')
       if (response.ok) {
         const data = await response.json()
         setProfile(data)
@@ -89,7 +89,7 @@ export default function SettingsPage() {
 
     setIsSaving(true)
     try {
-      const response = await fetch('/api/users/profile', {
+      const response = await fetch('/api/users/profile/drizzle', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

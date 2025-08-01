@@ -28,8 +28,11 @@ interface Post {
 }
 
 export default function DashboardPage() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [posts, setPosts] = useState<Post[]>([])
+  
+  console.log('🔍 Dashboard: Session status:', status)
+  console.log('🔍 Dashboard: Session data:', session)
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -48,12 +51,26 @@ export default function DashboardPage() {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache',
         },
+        credentials: 'include', // Ensure cookies are sent
       })
       
       if (response.ok) {
         const data = await response.json()
         console.log('✅ Posts fetched successfully:', data.posts?.length || 0, 'posts')
-        setPosts(data.posts || [])
+        console.log('🔍 First post data:', data.posts?.[0])
+        console.log('🔍 First post author:', data.posts?.[0]?.author)
+        console.log('🔍 All posts authors:', data.posts?.map(p => ({ id: p.id, author: p.author })))
+        
+        // Filter out posts without an id to prevent the error
+        const validPosts = (data.posts || []).filter(post => {
+          const isValid = post && post.id && typeof post.id === 'string' && post.id.trim() !== ''
+          if (!isValid) {
+            console.warn('🔍 Skipping invalid post:', post)
+          }
+          return isValid
+        })
+        console.log('🔍 Valid posts (with id):', validPosts.length, 'out of', data.posts?.length || 0)
+        setPosts(validPosts)
       } else {
         console.error('❌ Failed to fetch posts:', response.status, response.statusText)
         setError('Failed to load posts')
@@ -87,7 +104,16 @@ export default function DashboardPage() {
   }, [fetchPosts])
 
   const handlePostCreated = useCallback((newPost: Post) => {
-    setPosts(prev => [newPost, ...prev])
+    console.log('🔍 handlePostCreated called with:', newPost)
+    console.log('🔍 New post has ID:', newPost?.id)
+    console.log('🔍 New post has author:', newPost?.author)
+    console.log('🔍 New post has mediaUrls:', newPost?.mediaUrls)
+    
+    setPosts(prev => {
+      const updatedPosts = [newPost, ...prev]
+      console.log('🔍 Updated posts array length:', updatedPosts.length)
+      return updatedPosts
+    })
   }, [])
 
   const handlePostUpdate = useCallback((postId: string, updates: Partial<Post>) => {
@@ -198,15 +224,54 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              {posts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  onUpdate={handlePostUpdate}
-                  onDelete={handlePostDelete}
-                  onImageClick={handleImageClick}
-                />
-              ))}
+              {(() => {
+                try {
+                  console.log('🔍 Rendering posts:', posts.length, 'posts')
+                  console.log('🔍 Posts data:', posts.map((p, i) => ({ 
+                    index: i, 
+                    id: p?.id, 
+                    hasId: !!p?.id, 
+                    type: typeof p?.id,
+                    content: p?.content?.substring(0, 50),
+                    hasMedia: p?.mediaUrls?.length > 0
+                  })))
+                  
+                  const validPosts = posts.filter(post => {
+                    const isValid = post && post.id && typeof post.id === 'string' && post.id.trim() !== ''
+                    if (!isValid) {
+                      console.warn('🔍 Skipping invalid post:', post)
+                    }
+                    return isValid
+                  })
+                  console.log('🔍 Valid posts after filtering:', validPosts.length, 'posts')
+                  console.log('🔍 Valid posts details:', validPosts.map(p => ({ 
+                    id: p.id, 
+                    content: p.content?.substring(0, 50),
+                    hasMedia: p.mediaUrls?.length > 0,
+                    author: p.author?.name
+                  })))
+                  
+                  return validPosts.map((post, index) => {
+                    try {
+                      return (
+                        <PostCard
+                          key={post.id || `post-${index}`} // Fallback key
+                          post={post}
+                          onUpdate={handlePostUpdate}
+                          onDelete={handlePostDelete}
+                          onImageClick={handleImageClick}
+                        />
+                      )
+                    } catch (error) {
+                      console.error('🔍 Error rendering PostCard for post:', post, error)
+                      return null
+                    }
+                  })
+                } catch (error) {
+                  console.error('🔍 Error in posts rendering:', error)
+                  return <div>Error loading posts</div>
+                }
+              })()}
             </div>
           )}
         </div>

@@ -80,7 +80,7 @@ export default function ProfilePage() {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const response = await fetch(`/api/users/${username}`)
+      const response = await fetch(`/api/users/${username}/drizzle`)
       if (response.ok) {
         const data = await response.json()
         setProfile(data)
@@ -95,7 +95,7 @@ export default function ProfilePage() {
 
   const fetchProfilePosts = useCallback(async () => {
     try {
-      const response = await fetch(`/api/users/${username}/posts`)
+      const response = await fetch(`/api/users/${username}/posts/drizzle`)
       if (response.ok) {
         const data = await response.json()
         setPosts(data.posts)
@@ -108,7 +108,7 @@ export default function ProfilePage() {
   const fetchFollowers = useCallback(async () => {
     setIsLoadingTab(true)
     try {
-      const response = await fetch(`/api/users/${username}/followers`)
+      const response = await fetch(`/api/users/${username}/followers/drizzle`)
       if (response.ok) {
         const data = await response.json()
         setFollowers(data.followers)
@@ -123,7 +123,7 @@ export default function ProfilePage() {
   const fetchFollowing = useCallback(async () => {
     setIsLoadingTab(true)
     try {
-      const response = await fetch(`/api/users/${username}/following`)
+      const response = await fetch(`/api/users/${username}/following/drizzle`)
       if (response.ok) {
         const data = await response.json()
         setFollowing(data.following)
@@ -153,7 +153,7 @@ export default function ProfilePage() {
     
     setIsUpdatingFollow(true)
     try {
-      const response = await fetch(`/api/users/${username}/follow`, {
+      const response = await fetch(`/api/users/${username}/follow/drizzle`, {
         method: 'POST',
       })
 
@@ -191,7 +191,7 @@ export default function ProfilePage() {
 
   const handleUserFollow = useCallback(async (userId: string, username: string) => {
     try {
-      const response = await fetch(`/api/users/${username}/follow`, {
+      const response = await fetch(`/api/users/${username}/follow/drizzle`, {
         method: 'POST',
       })
 

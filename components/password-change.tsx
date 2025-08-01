@@ -37,7 +37,7 @@ export function PasswordChange({ className = "" }: PasswordChangeProps) {
     }
 
     try {
-      const response = await fetch('/api/users/change-password', {
+      const response = await fetch('/api/users/change-password/drizzle', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

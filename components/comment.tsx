@@ -49,7 +49,7 @@ export function Comment({
     
     setIsLiking(true)
     try {
-      const response = await fetch(`/api/comments/${comment.id}/like`, {
+      const response = await fetch(`/api/comments/${comment.id}/like/drizzle`, {
         method: 'POST',
       })
 

@@ -56,6 +56,14 @@ export async function POST(request: NextRequest) {
 
     const user = userData[0]
 
+    if (!user.password) {
+      console.log('🔐 CHANGE PASSWORD DRIZZLE: ❌ User has no password (OAuth user)')
+      return NextResponse.json(
+        { error: 'Cannot change password for OAuth users' },
+        { status: 400 }
+      )
+    }
+
     // Verify current password
     console.log('🔐 CHANGE PASSWORD DRIZZLE: 🔐 Verifying current password...')
     const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password)

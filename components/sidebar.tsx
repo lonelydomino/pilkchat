@@ -39,7 +39,7 @@ export function Sidebar() {
 
   const fetchBookmarkCount = async () => {
     try {
-      const response = await fetch('/api/bookmarks')
+      const response = await fetch('/api/bookmarks/drizzle')
       if (response.ok) {
         const data = await response.json()
         setBookmarkCount(data.posts?.length || 0)

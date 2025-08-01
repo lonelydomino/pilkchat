@@ -34,7 +34,7 @@ export default function ExplorePage() {
 
   const fetchTrendingPosts = useCallback(async () => {
     try {
-      const response = await fetch('/api/fetch-trending-posts')
+      const response = await fetch('/api/posts/trending/drizzle')
       if (response.ok) {
         const data = await response.json()
         setTrendingPosts(data.posts)
@@ -153,6 +153,7 @@ export default function ExplorePage() {
               {trendingPosts.map((post) => (
                 <div key={post.id} className="relative">
                   <PostCard
+                    key={post.id}
                     post={post}
                     onUpdate={handlePostUpdate}
                     onDelete={handlePostDelete}

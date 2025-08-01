@@ -43,7 +43,7 @@ export function useNotifications() {
     if (!session?.user?.id || !isClient) return
 
     try {
-      const response = await fetch('/api/notifications')
+      const response = await fetch('/api/notifications/drizzle')
       if (response.ok) {
         const data = await response.json()
         setNotifications(data.notifications)
@@ -59,7 +59,7 @@ export function useNotifications() {
   // Mark notification as read
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
-      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+      const response = await fetch(`/api/notifications/${notificationId}/read/drizzle`, {
         method: 'POST',
       })
 
@@ -81,7 +81,7 @@ export function useNotifications() {
   // Mark all notifications as read
   const markAllAsRead = useCallback(async () => {
     try {
-      const response = await fetch('/api/notifications/mark-all-read', {
+      const response = await fetch('/api/notifications/mark-all-read/drizzle', {
         method: 'POST',
       })
 

@@ -19,7 +19,7 @@ export function TrendingHashtags() {
   useEffect(() => {
     const fetchTrendingHashtags = async () => {
       try {
-        const response = await fetch('/api/hashtags?limit=5')
+        const response = await fetch('/api/hashtags/drizzle?limit=5')
         if (response.ok) {
           const data = await response.json()
           setHashtags(data.hashtags)

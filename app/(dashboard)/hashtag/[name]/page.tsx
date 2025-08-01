@@ -58,7 +58,7 @@ export default function HashtagPage() {
   const fetchHashtagData = useCallback(async (page: number = 1) => {
     try {
       setError(null)
-      const response = await fetch(`/api/hashtags/${encodeURIComponent(hashtagName)}?page=${page}`)
+      const response = await fetch(`/api/hashtags/${encodeURIComponent(hashtagName)}/drizzle?page=${page}`)
       
       if (response.ok) {
         const hashtagData = await response.json()

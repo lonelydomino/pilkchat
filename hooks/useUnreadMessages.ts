@@ -23,7 +23,7 @@ export function useUnreadMessages() {
 
     const fetchUnreadCount = async () => {
       try {
-        const response = await fetch('/api/messages/unread-count')
+        const response = await fetch('/api/messages/unread-count/drizzle')
         if (response.ok) {
           const data = await response.json()
           setUnreadCount(data.count)

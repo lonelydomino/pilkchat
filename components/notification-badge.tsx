@@ -23,7 +23,7 @@ export function NotificationBadge({ className = "" }: NotificationBadgeProps) {
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await fetch('/api/notifications/unread-count')
+      const response = await fetch('/api/notifications/unread-count/drizzle')
       if (response.ok) {
         const data = await response.json()
         setUnreadCount(data.count)

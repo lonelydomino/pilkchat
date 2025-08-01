@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/auth'
+import { authOptions } from '@/auth-drizzle'
 import { addConnection, removeConnection } from '@/lib/message-stream'
 
 // Force dynamic rendering for this route

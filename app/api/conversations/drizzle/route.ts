@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth-drizzle'
 import { db } from '@/lib/db'
 import { conversations, conversationParticipants, users, messages } from '@/lib/db/schema'
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and, desc, isNull } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           eq(conversationParticipants.userId, userId),
-          eq(conversationParticipants.leftAt, null)
+          isNull(conversationParticipants.leftAt)
         )
       )
       .orderBy(desc(conversations.updatedAt))
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
           .where(
             and(
               eq(conversationParticipants.conversationId, conv.id),
-              eq(conversationParticipants.leftAt, null)
+              isNull(conversationParticipants.leftAt)
             )
           )
 

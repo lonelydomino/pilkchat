@@ -164,12 +164,7 @@ export async function POST(request: NextRequest) {
         content: comments.content,
         createdAt: comments.createdAt,
         updatedAt: comments.updatedAt,
-        author: {
-          id: users.id,
-          name: users.name,
-          username: users.username,
-          image: users.image,
-        },
+        authorId: comments.authorId,
       })
 
     console.log('💭 COMMENTS DRIZZLE: ✅ Comment created with ID:', newComment.id)

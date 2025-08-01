@@ -1,11 +1,11 @@
-import NextAuth from 'next-auth'
+import NextAuth, { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -52,10 +52,10 @@ export const authOptions = {
           console.log('AUTH DRIZZLE: ✅ Authentication successful')
           return {
             id: foundUser.id,
-            email: foundUser.email,
-            name: foundUser.name,
+            email: foundUser.email || '',
+            name: foundUser.name || '',
             username: foundUser.username,
-            image: foundUser.image,
+            image: foundUser.image || '',
           }
         } catch (error) {
           console.error('AUTH DRIZZLE: ❌ Error during authentication:', error)
@@ -65,16 +65,19 @@ export const authOptions = {
     })
   ],
   session: {
-    strategy: 'jwt'
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
     async jwt({ token, user }) {
+      console.log('🔍 AUTH DRIZZLE: JWT callback called with:', { token: token ? { sub: token.sub, email: token.email } : null, user: user ? { id: user.id, username: user.username } : null })
       if (user) {
         token.username = user.username
       }
       return token
     },
     async session({ session, token }) {
+      console.log('🔍 AUTH DRIZZLE: Session callback called with:', { session: session ? { user: session.user } : null, token: token ? { sub: token.sub, username: token.username } : null })
       if (token) {
         session.user.id = token.sub!
         session.user.username = token.username as string
@@ -84,5 +87,16 @@ export const authOptions = {
   },
   pages: {
     signIn: '/login',
+  },
+  cookies: {
+    sessionToken: {
+      name: 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    }
   }
 } 

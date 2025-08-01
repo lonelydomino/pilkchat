@@ -36,7 +36,7 @@ export default function BookmarksPage() {
   const fetchBookmarks = useCallback(async () => {
     try {
       setError(null)
-      const response = await fetch('/api/bookmarks')
+      const response = await fetch('/api/bookmarks/drizzle')
       if (response.ok) {
         const data = await response.json()
         setBookmarkedPosts(data.posts)

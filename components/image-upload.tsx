@@ -16,6 +16,7 @@ interface ImageUploadProps {
   allowedTypes?: string[]
   placeholder?: string
   variant?: 'default' | 'compact' | 'button'
+  uploadType?: 'profile' | 'post' // New prop to determine upload type
 }
 
 export function ImageUpload({
@@ -28,7 +29,8 @@ export function ImageUpload({
   maxSize = 5,
   allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'],
   placeholder = 'Upload image',
-  variant = 'default'
+  variant = 'default',
+  uploadType = 'profile'
 }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [preview, setPreview] = useState<string | null>(currentImage || null)
@@ -92,11 +94,14 @@ export function ImageUpload({
       formData.append('image', file)
       console.log('📤 CLIENT: FormData created')
 
-      const uploadUrl = '/api/upload-image?t=' + Date.now()
+      const uploadUrl = uploadType === 'post' 
+        ? '/api/upload-post-image/drizzle?t=' + Date.now()
+        : '/api/upload-image/drizzle?t=' + Date.now()
       console.log('📤 CLIENT: Uploading to:', uploadUrl)
       
       const response = await fetch(uploadUrl, {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       })
       

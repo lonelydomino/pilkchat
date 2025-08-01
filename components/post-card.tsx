@@ -40,6 +40,18 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardProps) {
+  // Defensive check - if post is undefined or null, don't render anything
+  if (!post || !post.id) {
+    console.warn('🔍 PostCard received invalid post:', post)
+    return null
+  }
+  
+  console.log('🔍 PostCard received post:', post)
+  console.log('🔍 PostCard author data:', post.author)
+  console.log('🔍 PostCard author name:', post.author?.name)
+  console.log('🔍 PostCard author username:', post.author?.username)
+  console.log('🔍 PostCard mediaUrls:', post.mediaUrls)
+  console.log('🔍 PostCard has mediaUrls:', post.mediaUrls?.length > 0)
   const [isLiking, setIsLiking] = useState(false)
   const [isReposting, setIsReposting] = useState(false)
   const [isBookmarking, setIsBookmarking] = useState(false)
@@ -56,6 +68,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
     try {
       const response = await fetch(`/api/posts/${post.id}/like/drizzle`, {
         method: 'POST',
+        credentials: 'include',
       })
 
       if (response.ok) {
@@ -82,6 +95,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
     try {
       const response = await fetch(`/api/posts/${post.id}/repost/drizzle`, {
         method: 'POST',
+        credentials: 'include',
       })
 
       if (response.ok) {
@@ -108,6 +122,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
     try {
       const response = await fetch(`/api/posts/${post.id}/bookmark/drizzle`, {
         method: 'POST',
+        credentials: 'include',
       })
 
       if (response.ok) {
@@ -134,7 +149,9 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
   const fetchComments = async () => {
     setIsLoadingComments(true)
     try {
-      const response = await fetch(`/api/comments/drizzle?postId=${post.id}`)
+      const response = await fetch(`/api/comments/drizzle?postId=${post.id}`, {
+        credentials: 'include',
+      })
       if (response.ok) {
         const data = await response.json()
         setComments(data.comments)
@@ -199,7 +216,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
       <div className="mt-2 flex flex-wrap gap-1">
         {post.hashtags.map((hashtag, index) => (
           <Link
-            key={index}
+            key={`${post.id}-hashtag-${hashtag.name}-${index}`}
             href={`/hashtag/${hashtag.name}`}
             className="text-blue-500 hover:text-blue-600 hover:underline font-medium"
           >
@@ -211,10 +228,15 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
   }
 
   const renderMediaGrid = () => {
-    if (!post.mediaUrls || post.mediaUrls.length === 0) return null
+    console.log('🔍 renderMediaGrid called with mediaUrls:', post.mediaUrls)
+    if (!post.mediaUrls || post.mediaUrls.length === 0) {
+      console.log('🔍 renderMediaGrid: No mediaUrls, returning null')
+      return null
+    }
 
     const images = post.mediaUrls
     const imageCount = images.length
+    console.log('🔍 renderMediaGrid: Rendering', imageCount, 'images')
 
     if (imageCount === 1) {
       return (
@@ -293,7 +315,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
       <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
         <div className="flex space-x-3">
           <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {post.author.image ? (
+            {post.author?.image ? (
               <img 
                 src={post.author.image} 
                 alt={`${post.author.name}'s profile`}
@@ -308,10 +330,10 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
             {/* Header */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-2">
-                <Link href={`/profile/${post.author.username}`} className="hover:underline">
-                  <span className="font-semibold text-gray-900">{post.author.name}</span>
+                <Link href={`/profile/${post.author?.username || 'unknown'}`} className="hover:underline">
+                  <span className="font-semibold text-gray-900">{post.author?.name || 'Unknown User'}</span>
                 </Link>
-                <span className="text-gray-500">@{post.author.username}</span>
+                <span className="text-gray-500">@{post.author?.username || 'unknown'}</span>
                 <span className="text-gray-400">·</span>
                 <span className="text-gray-500">{formatDate(post.createdAt)}</span>
               </div>
@@ -335,7 +357,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
                   onClick={handleShowComments}
                 >
                   <MessageCircle className="w-4 h-4 mr-2" />
-                  {post._count.comments}
+                  {post._count?.comments || 0}
                 </Button>
                 
                 {/* Repost */}
@@ -347,7 +369,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
                   disabled={isReposting}
                 >
                   <Repeat className="w-4 h-4 mr-2" />
-                  {post._count.reposts}
+                  {post._count?.reposts || 0}
                 </Button>
                 
                 {/* Like */}
@@ -359,7 +381,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
                   disabled={isLiking}
                 >
                   <Heart className={`w-4 h-4 mr-2 ${post.isLiked ? 'fill-current' : ''}`} />
-                  {post._count.likes}
+                  {post._count?.likes || 0}
                 </Button>
                 
                 {/* Bookmark */}

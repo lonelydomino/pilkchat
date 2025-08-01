@@ -23,7 +23,7 @@ export default function NotificationsPage() {
   const fetchNotifications = useCallback(async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/notifications')
+      const response = await fetch('/api/notifications/drizzle')
       if (response.ok) {
         const data = await response.json()
         setNotifications(data.notifications)
@@ -56,7 +56,7 @@ export default function NotificationsPage() {
     
     setIsMarkingAllAsRead(true)
     try {
-      const response = await fetch('/api/notifications/mark-all-read', {
+      const response = await fetch('/api/notifications/mark-all-read/drizzle', {
         method: 'POST',
       })
 

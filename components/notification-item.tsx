@@ -46,7 +46,7 @@ export function NotificationItem({ notification, onMarkAsRead, onDelete }: Notif
     
     setIsMarkingAsRead(true)
     try {
-      const response = await fetch(`/api/notifications/${notification.id}/read`, {
+      const response = await fetch(`/api/notifications/${notification.id}/read/drizzle`, {
         method: 'POST',
       })
 
@@ -65,7 +65,7 @@ export function NotificationItem({ notification, onMarkAsRead, onDelete }: Notif
     
     setIsDeleting(true)
     try {
-      const response = await fetch(`/api/notifications/${notification.id}`, {
+      const response = await fetch(`/api/notifications/${notification.id}/drizzle`, {
         method: 'DELETE',
       })
 

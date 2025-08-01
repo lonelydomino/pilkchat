@@ -14,7 +14,7 @@ export function useUserImage() {
       }
 
       try {
-        const response = await fetch(`/api/users/${session.user.username}`)
+        const response = await fetch(`/api/users/${session.user.username}/drizzle`)
         if (response.ok) {
           const data = await response.json()
           setImage(data.image || null)

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth-drizzle'
 import { db } from '@/lib/db'
-import { users, follows } from '@/lib/db/schema'
+import { users, follows, posts } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
@@ -79,21 +79,31 @@ export async function GET(
     // Get follower and following counts
     console.log('👤 USER PROFILE DRIZZLE: 🔍 Getting follower counts...')
     
-    const [followerCount] = await db
-      .select({ count: follows.id })
+    const followerData = await db
+      .select()
       .from(follows)
       .where(eq(follows.followingId, user.id))
 
-    const [followingCount] = await db
-      .select({ count: follows.id })
+    const followingData = await db
+      .select()
       .from(follows)
       .where(eq(follows.followerId, user.id))
+
+    // Get post count
+    console.log('👤 USER PROFILE DRIZZLE: 🔍 Getting post count...')
+    const postCountData = await db
+      .select()
+      .from(posts)
+      .where(eq(posts.authorId, user.id))
+    
+    const postCount = postCountData.length
 
     const profile = {
       ...user,
       _count: {
-        followers: followerCount?.count || 0,
-        following: followingCount?.count || 0,
+        followers: followerData.length,
+        following: followingData.length,
+        posts: postCount,
       },
       isFollowing,
       isCurrentUser: currentUserId === user.id,
@@ -101,7 +111,7 @@ export async function GET(
 
     console.log('👤 USER PROFILE DRIZZLE: ✅ Profile data prepared')
     
-    return NextResponse.json({ profile })
+    return NextResponse.json(profile)
 
   } catch (error) {
     console.error('👤 USER PROFILE DRIZZLE: ❌ Error fetching user profile:', error)
