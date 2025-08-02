@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(comments.createdAt))
 
     console.log('💭 COMMENTS DRIZZLE: ✅ Found', commentsData.length, 'comments')
+    console.log('💭 COMMENTS DRIZZLE: 🔍 Sample comment data:', commentsData[0])
 
     // Add _count data to each comment
     const commentsWithCount = commentsData.map(comment => ({
