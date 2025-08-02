@@ -40,6 +40,8 @@ export function Comment({
   onCommentDelete,
   depth = 0 
 }: CommentProps) {
+  // Debug logging to see the comment structure
+  console.log('Comment data:', comment)
   const [isLiking, setIsLiking] = useState(false)
   const [showReplies, setShowReplies] = useState(false)
   const [showReplyForm, setShowReplyForm] = useState(false)
@@ -105,7 +107,7 @@ export function Comment({
                 <span className="text-gray-500 text-sm">@{comment.author?.username || 'unknown'}</span>
               </Link>
               <span className="text-gray-400">·</span>
-              <span className="text-gray-500 text-xs">{formatDate(comment.createdAt)}</span>
+              <span className="text-gray-500 text-xs">{comment.createdAt ? formatDate(comment.createdAt) : 'just now'}</span>
             </div>
             
             <Button variant="ghost" size="sm">
