@@ -169,10 +169,31 @@ export async function POST(request: NextRequest) {
 
     console.log('💭 COMMENTS DRIZZLE: ✅ Comment created with ID:', newComment.id)
 
+    // Fetch the complete comment with author information
+    console.log('💭 COMMENTS DRIZZLE: 🔍 Fetching complete comment data...')
+    const [completeComment] = await db
+      .select({
+        id: comments.id,
+        content: comments.content,
+        createdAt: comments.createdAt,
+        updatedAt: comments.updatedAt,
+        author: {
+          id: users.id,
+          name: users.name,
+          username: users.username,
+          image: users.image,
+        },
+      })
+      .from(comments)
+      .innerJoin(users, eq(comments.authorId, users.id))
+      .where(eq(comments.id, newComment.id))
+
+    console.log('💭 COMMENTS DRIZZLE: ✅ Complete comment data fetched')
+
     return NextResponse.json({
       success: true,
       message: 'Comment created successfully',
-      comment: newComment
+      comment: completeComment
     })
 
   } catch (error) {
