@@ -62,8 +62,18 @@ export async function GET(request: NextRequest) {
 
     console.log('💭 COMMENTS DRIZZLE: ✅ Found', commentsData.length, 'comments')
 
+    // Add _count data to each comment
+    const commentsWithCount = commentsData.map(comment => ({
+      ...comment,
+      _count: {
+        likes: 0, // TODO: Add actual like count query
+        replies: 0 // TODO: Add actual reply count query
+      },
+      isLiked: false // TODO: Add actual like status query
+    }))
+
     return NextResponse.json({
-      comments: commentsData
+      comments: commentsWithCount
     })
 
   } catch (error) {
