@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
     console.log('📝 FETCH POSTS DRIZZLE: ✅ Total count:', totalCount)
 
     // Transform the data to match the expected format
-    const transformedPosts = await Promise.all(
+    const transformedPostsPromise = Promise.all(
       postsWithAuthors
         .filter((post: any) => {
           const isValid = post && post.id && typeof post.id === 'string' && post.id.trim() !== ''
@@ -189,7 +189,8 @@ export async function GET(request: NextRequest) {
           }
         })
     )
-      .filter(Boolean) // Remove any null entries from transformation errors
+
+    const transformedPosts = (await transformedPostsPromise).filter(Boolean) // Remove any null entries from transformation errors
 
     console.log('📝 FETCH POSTS DRIZZLE: 🔍 First transformed post:', transformedPosts[0])
     console.log('📝 FETCH POSTS DRIZZLE: 🔍 First post author:', transformedPosts[0]?.author)
