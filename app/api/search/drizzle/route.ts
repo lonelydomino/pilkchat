@@ -85,7 +85,48 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 SEARCH DRIZZLE: ✅ Search completed')
 
-    const response = NextResponse.json(results)
+    // Transform results to match frontend expectations
+    const transformedResults = []
+    
+    // Add users as search results
+    results.users.forEach((user: any) => {
+      transformedResults.push({
+        type: 'user',
+        user: {
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          image: user.image,
+          bio: user.bio,
+          isFollowing: false // TODO: Add actual following status
+        }
+      })
+    })
+    
+    // Add posts as search results
+    results.posts.forEach((post: any) => {
+      transformedResults.push({
+        type: 'post',
+        post: {
+          id: post.id,
+          content: post.content,
+          createdAt: post.createdAt,
+          author: post.author,
+          _count: {
+            likes: 0, // TODO: Add actual counts
+            comments: 0,
+            reposts: 0
+          },
+          isLiked: false, // TODO: Add actual status
+          isReposted: false,
+          isBookmarked: false
+        }
+      })
+    })
+
+    const response = NextResponse.json({
+      results: transformedResults
+    })
 
     // Add cache control headers
     response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
