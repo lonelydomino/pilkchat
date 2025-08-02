@@ -86,7 +86,43 @@ export async function GET(request: NextRequest) {
     console.log('🔍 SEARCH DRIZZLE: ✅ Search completed')
 
     // Transform results to match frontend expectations
-    const transformedResults = []
+    const transformedResults: Array<{
+      type: 'user' | 'post' | 'hashtag';
+      user?: {
+        id: string;
+        name: string;
+        username: string;
+        image?: string;
+        bio?: string;
+        isFollowing: boolean;
+      };
+      post?: {
+        id: string;
+        content: string;
+        createdAt: string;
+        author: {
+          id: string;
+          name: string;
+          username: string;
+          image?: string;
+        };
+        _count: {
+          likes: number;
+          comments: number;
+          reposts: number;
+        };
+        isLiked: boolean;
+        isReposted: boolean;
+        isBookmarked: boolean;
+      };
+      hashtag?: {
+        id: string;
+        name: string;
+        _count: {
+          posts: number;
+        };
+      };
+    }> = []
     
     // Add users as search results
     results.users.forEach((user: any) => {
