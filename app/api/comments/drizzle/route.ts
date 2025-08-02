@@ -158,6 +158,7 @@ export async function POST(request: NextRequest) {
         postId,
         authorId: userId,
         parentId: parentId || null,
+        updatedAt: new Date(),
       })
       .returning({
         id: comments.id,
