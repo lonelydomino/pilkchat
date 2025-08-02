@@ -191,10 +191,20 @@ export async function POST(request: NextRequest) {
 
     console.log('💭 COMMENTS DRIZZLE: ✅ Complete comment data fetched')
 
+    // Add the _count data that the frontend expects
+    const commentWithCount = {
+      ...completeComment,
+      _count: {
+        likes: 0,
+        replies: 0
+      },
+      isLiked: false
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Comment created successfully',
-      comment: completeComment
+      comment: commentWithCount
     })
 
   } catch (error) {
