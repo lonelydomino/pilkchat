@@ -161,7 +161,12 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
 
   const handleCommentAdded = (newComment: any) => {
     console.log('💭 PostCard: Comment added, updating count from', post._count.comments, 'to', post._count.comments + 1)
-    setComments(prev => [newComment, ...prev])
+    
+    // Extract the actual comment from the response if it's wrapped
+    const actualComment = newComment.comment || newComment
+    console.log('💭 PostCard: Actual comment data:', actualComment)
+    
+    setComments(prev => [actualComment, ...prev])
     
     // Update the local count immediately
     onUpdate(post.id, {
