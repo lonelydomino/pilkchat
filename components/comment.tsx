@@ -104,10 +104,22 @@ export function Comment({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
               <Link href={`/profile/${comment.author?.username || 'unknown'}`} className="hover:underline">
-                <span className="font-semibold text-gray-900 text-sm">{comment.author?.name || 'Unknown User'}</span>
+                <span className="font-semibold text-gray-900 text-sm">
+                  {(() => {
+                    const name = comment.author?.name || 'Unknown User'
+                    console.log('💭 Comment: Rendering name:', name, 'for comment:', comment.id)
+                    return name
+                  })()}
+                </span>
               </Link>
               <Link href={`/profile/${comment.author?.username || 'unknown'}`} className="hover:underline">
-                <span className="text-gray-500 text-sm">@{comment.author?.username || 'unknown'}</span>
+                <span className="text-gray-500 text-sm">
+                  {(() => {
+                    const username = comment.author?.username || 'unknown'
+                    console.log('💭 Comment: Rendering username:', username, 'for comment:', comment.id)
+                    return `@${username}`
+                  })()}
+                </span>
               </Link>
               <span className="text-gray-400">·</span>
               <span className="text-gray-500 text-xs">{comment.createdAt ? formatDate(comment.createdAt) : 'just now'}</span>
