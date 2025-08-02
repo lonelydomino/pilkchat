@@ -149,6 +149,7 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
       })
       if (response.ok) {
         const data = await response.json()
+        console.log('💭 PostCard: Fetched comments data:', data.comments)
         setComments(data.comments)
       }
     } catch (error) {
