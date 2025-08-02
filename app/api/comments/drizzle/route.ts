@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth-drizzle'
 import { db } from '@/lib/db'
-import { comments, users, posts } from '@/lib/db/schema'
+import { comments, users, posts, notifications } from '@/lib/db/schema'
 import { eq, desc } from 'drizzle-orm'
+import { sendNotificationToUser } from '@/lib/notification-stream'
 
 export const dynamic = 'force-dynamic'
 
@@ -201,6 +202,54 @@ export async function POST(request: NextRequest) {
       .where(eq(comments.id, newComment.id))
 
     console.log('💭 COMMENTS DRIZZLE: ✅ Complete comment data fetched')
+
+    // Create notification for post author (if not commenting on own post)
+    const post = postData[0]
+    if (post.authorId !== userId) {
+      try {
+        console.log('💭 COMMENTS DRIZZLE: 🔔 Creating notification...')
+        
+        // Get the user who commented
+        const [commentingUser] = await db
+          .select({
+            id: users.id,
+            name: users.name,
+            username: users.username,
+          })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1)
+
+        // Create notification
+        const [newNotification] = await db
+          .insert(notifications)
+          .values({
+            userId: post.authorId,
+            type: 'comment',
+            message: `${commentingUser?.name || 'Someone'} commented on your post`,
+            relatedUserId: userId,
+            relatedPostId: postId,
+            read: false,
+            createdAt: new Date(),
+          })
+          .returning()
+
+        console.log('💭 COMMENTS DRIZZLE: ✅ Notification created:', newNotification.id)
+
+        // Send real-time notification
+        sendNotificationToUser(post.authorId, {
+          type: 'new_notification',
+          notification: {
+            id: newNotification.id,
+            type: 'comment',
+            message: `${commentingUser?.name || 'Someone'} commented on your post`,
+            createdAt: newNotification.createdAt,
+          }
+        })
+      } catch (error) {
+        console.error('💭 COMMENTS DRIZZLE: ❌ Error creating notification:', error)
+      }
+    }
 
     // Add the _count data that the frontend expects
     const commentWithCount = {

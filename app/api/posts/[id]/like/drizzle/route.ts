@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth-drizzle'
 import { db } from '@/lib/db'
-import { likes, posts } from '@/lib/db/schema'
+import { likes, posts, notifications, users } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
+import { sendNotificationToUser } from '@/lib/notification-stream'
 
 export const dynamic = 'force-dynamic'
 
@@ -80,6 +81,54 @@ export async function POST(
           postId,
           userId,
         })
+
+      // Create notification for post author (if not liking own post)
+      const post = postData[0]
+      if (post.authorId !== userId) {
+        try {
+          console.log('👍 LIKE DRIZZLE: 🔔 Creating notification...')
+          
+          // Get the user who liked the post
+          const [likingUser] = await db
+            .select({
+              id: users.id,
+              name: users.name,
+              username: users.username,
+            })
+            .from(users)
+            .where(eq(users.id, userId))
+            .limit(1)
+
+          // Create notification
+          const [newNotification] = await db
+            .insert(notifications)
+            .values({
+              userId: post.authorId,
+              type: 'like',
+              message: `${likingUser?.name || 'Someone'} liked your post`,
+              relatedUserId: userId,
+              relatedPostId: postId,
+              read: false,
+              createdAt: new Date(),
+            })
+            .returning()
+
+          console.log('👍 LIKE DRIZZLE: ✅ Notification created:', newNotification.id)
+
+          // Send real-time notification
+          sendNotificationToUser(post.authorId, {
+            type: 'new_notification',
+            notification: {
+              id: newNotification.id,
+              type: 'like',
+              message: `${likingUser?.name || 'Someone'} liked your post`,
+              createdAt: newNotification.createdAt,
+            }
+          })
+        } catch (error) {
+          console.error('👍 LIKE DRIZZLE: ❌ Error creating notification:', error)
+        }
+      }
 
       console.log('👍 LIKE DRIZZLE: ✅ Post liked')
       return NextResponse.json({
