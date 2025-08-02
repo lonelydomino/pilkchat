@@ -55,8 +55,8 @@ export function Comment({
 
       if (response.ok) {
         const newLikeCount = comment.isLiked 
-          ? comment._count.likes - 1 
-          : comment._count.likes + 1
+          ? (comment._count?.likes || 0) - 1 
+          : (comment._count?.likes || 0) + 1
         
         onCommentUpdate(comment.id, {
           isLiked: !comment.isLiked,
@@ -83,10 +83,10 @@ export function Comment({
     <div className={`border-l-2 border-gray-100 pl-4 ${depth > 0 ? 'ml-4' : ''}`}>
                <div className="flex space-x-3">
            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-             {comment.author.image ? (
+             {comment.author?.image ? (
                <img 
                  src={comment.author.image} 
-                 alt={`${comment.author.name}'s profile`}
+                 alt={`${comment.author.name || 'User'}'s profile`}
                  className="w-full h-full object-cover"
                />
              ) : (
@@ -98,11 +98,11 @@ export function Comment({
           {/* Comment Header */}
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
-              <Link href={`/profile/${comment.author.username}`} className="hover:underline">
-                <span className="font-semibold text-gray-900 text-sm">{comment.author.name}</span>
+              <Link href={`/profile/${comment.author?.username || 'unknown'}`} className="hover:underline">
+                <span className="font-semibold text-gray-900 text-sm">{comment.author?.name || 'Unknown User'}</span>
               </Link>
-              <Link href={`/profile/${comment.author.username}`} className="hover:underline">
-                <span className="text-gray-500 text-sm">@{comment.author.username}</span>
+              <Link href={`/profile/${comment.author?.username || 'unknown'}`} className="hover:underline">
+                <span className="text-gray-500 text-sm">@{comment.author?.username || 'unknown'}</span>
               </Link>
               <span className="text-gray-400">·</span>
               <span className="text-gray-500 text-xs">{formatDate(comment.createdAt)}</span>
@@ -129,7 +129,7 @@ export function Comment({
               disabled={isLiking}
             >
               <Heart className={`w-3 h-3 mr-1 ${comment.isLiked ? 'fill-current' : ''}`} />
-              {comment._count.likes}
+              {comment._count?.likes || 0}
             </Button>
             
             {/* Reply */}
@@ -146,7 +146,7 @@ export function Comment({
             )}
             
             {/* Show Replies */}
-            {comment._count.replies > 0 && (
+            {(comment._count?.replies || 0) > 0 && (
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -161,7 +161,7 @@ export function Comment({
                 ) : (
                   <>
                     <ChevronDown className="w-3 h-3 mr-1" />
-                    {comment._count.replies} replies
+                    {(comment._count?.replies || 0)} replies
                   </>
                 )}
               </Button>
@@ -175,7 +175,7 @@ export function Comment({
                 postId={comment.id} // This will be the parent comment ID
                 parentId={comment.id}
                 onCommentAdded={handleReplyAdded}
-                placeholder={`Reply to @${comment.author.username}...`}
+                placeholder={`Reply to @${comment.author?.username || 'unknown'}...`}
                 className="border-t border-gray-100 pt-3"
               />
             </div>
