@@ -92,6 +92,7 @@ export async function POST(request: NextRequest) {
           password: hashedPassword,
           username,
           name,
+          updatedAt: new Date(),
         })
         .returning({
           id: users.id,
