@@ -159,10 +159,40 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
   }
 
   const handleCommentAdded = (newComment: any) => {
+    console.log('💭 PostCard: Comment added, updating count from', post._count.comments, 'to', post._count.comments + 1)
     setComments(prev => [newComment, ...prev])
+    
+    // Update the local count immediately
     onUpdate(post.id, {
       _count: { ...post._count, comments: post._count.comments + 1 }
     })
+    
+    // Also refresh the post data from server to ensure accuracy
+    refreshPostData()
+  }
+
+  const refreshPostData = async () => {
+    try {
+      const response = await fetch(`/api/fetch-posts-drizzle?postId=${post.id}`, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
+        credentials: 'include',
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const updatedPost = data.posts?.find((p: any) => p.id === post.id)
+        if (updatedPost) {
+          console.log('💭 PostCard: Refreshed post data, new comment count:', updatedPost._count.comments)
+          onUpdate(post.id, updatedPost)
+        }
+      }
+    } catch (error) {
+      console.error('💭 PostCard: Error refreshing post data:', error)
+    }
   }
 
   const handleCommentUpdate = (commentId: string, updates: any) => {
@@ -349,7 +379,11 @@ export function PostCard({ post, onUpdate, onDelete, onImageClick }: PostCardPro
                   onClick={handleShowComments}
                 >
                   <MessageCircle className="w-4 h-4 mr-2" />
-                  {post._count?.comments || 0}
+                  {(() => {
+                    const count = post._count?.comments || 0
+                    console.log('💭 PostCard: Displaying comment count:', count, 'for post:', post.id)
+                    return count
+                  })()}
                 </Button>
                 
                 {/* Repost */}

@@ -14,11 +14,12 @@ export async function GET(request: NextRequest) {
     
     const session = await getServerSession(authOptions)
     const { searchParams } = new URL(request.url)
+    const postId = searchParams.get('postId')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = (page - 1) * limit
 
-    console.log('📝 FETCH POSTS DRIZZLE: 📊 Pagination params:', { page, limit, offset })
+    console.log('📝 FETCH POSTS DRIZZLE: 📊 Pagination params:', { page, limit, offset, postId })
     console.log('📝 FETCH POSTS DRIZZLE: 👤 Session user:', session?.user?.id || 'No session')
     console.log('📝 FETCH POSTS DRIZZLE: 🔍 Full session:', session)
 
@@ -27,21 +28,39 @@ export async function GET(request: NextRequest) {
     // Fetch posts with Drizzle - much simpler!
     let postsData: any[] = []
     try {
-      postsData = await db
-        .select({
-          id: posts.id,
-          content: posts.content,
-          published: posts.published,
-          createdAt: posts.createdAt,
-          updatedAt: posts.updatedAt,
-          authorId: posts.authorId,
-          mediaUrls: posts.mediaUrls,
-        })
-        .from(posts)
-        .where(eq(posts.published, true))
-        .orderBy(desc(posts.createdAt))
-        .limit(limit)
-        .offset(offset)
+      if (postId) {
+        // Fetch single post
+        postsData = await db
+          .select({
+            id: posts.id,
+            content: posts.content,
+            published: posts.published,
+            createdAt: posts.createdAt,
+            updatedAt: posts.updatedAt,
+            authorId: posts.authorId,
+            mediaUrls: posts.mediaUrls,
+          })
+          .from(posts)
+          .where(eq(posts.id, postId))
+          .limit(1)
+      } else {
+        // Fetch multiple posts
+        postsData = await db
+          .select({
+            id: posts.id,
+            content: posts.content,
+            published: posts.published,
+            createdAt: posts.createdAt,
+            updatedAt: posts.updatedAt,
+            authorId: posts.authorId,
+            mediaUrls: posts.mediaUrls,
+          })
+          .from(posts)
+          .where(eq(posts.published, true))
+          .orderBy(desc(posts.createdAt))
+          .limit(limit)
+          .offset(offset)
+      }
 
       console.log('📝 FETCH POSTS DRIZZLE: ✅ Found', postsData.length, 'posts')
       console.log('📝 FETCH POSTS DRIZZLE: 🔍 Posts data sample:', postsData.slice(0, 3).map(p => ({ id: p.id, hasId: !!p.id, idType: typeof p.id })))
@@ -83,14 +102,17 @@ export async function GET(request: NextRequest) {
 
     console.log('📝 FETCH POSTS DRIZZLE: ✅ Found', postsWithAuthors.length, 'posts')
 
-    // Get total count
-    console.log('📝 FETCH POSTS DRIZZLE: 🔍 Counting total posts...')
-    const totalCountResult = await db
-      .select({ count: posts.id })
-      .from(posts)
-      .where(eq(posts.published, true))
+    // Get total count (only for multiple posts requests)
+    let totalCount = 0
+    if (!postId) {
+      console.log('📝 FETCH POSTS DRIZZLE: 🔍 Counting total posts...')
+      const totalCountResult = await db
+        .select({ count: posts.id })
+        .from(posts)
+        .where(eq(posts.published, true))
 
-    const totalCount = totalCountResult.length
+      totalCount = totalCountResult.length
+    }
 
     console.log('📝 FETCH POSTS DRIZZLE: ✅ Total count:', totalCount)
 
@@ -131,6 +153,7 @@ export async function GET(request: NextRequest) {
               .where(eq(comments.postId, post.id))
 
             const commentCount = commentCountResult[0]?.count || 0
+            console.log('📝 FETCH POSTS DRIZZLE: 💭 Post', post.id, 'has', commentCount, 'comments')
 
             // Get like count for this post
             const likeCountResult = await db
@@ -179,7 +202,7 @@ export async function GET(request: NextRequest) {
     
     const response = NextResponse.json({
       posts: finalPosts,
-      pagination: {
+      pagination: postId ? null : {
         page,
         limit,
         total: totalCount,
