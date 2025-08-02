@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth-drizzle'
 import { db } from '@/lib/db'
-import { posts, users } from '@/lib/db/schema'
-import { eq, desc } from 'drizzle-orm'
+import { posts, users, comments, likes, reposts } from '@/lib/db/schema'
+import { eq, desc, count } from 'drizzle-orm'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
@@ -95,51 +95,77 @@ export async function GET(request: NextRequest) {
     console.log('📝 FETCH POSTS DRIZZLE: ✅ Total count:', totalCount)
 
     // Transform the data to match the expected format
-    const transformedPosts = postsWithAuthors
-      .filter((post: any) => {
-        const isValid = post && post.id && typeof post.id === 'string' && post.id.trim() !== ''
-        if (!isValid) {
-          console.warn('📝 FETCH POSTS DRIZZLE: ⚠️ Skipping invalid post in transformation:', post)
-        }
-        return isValid
-      })
-      .map(post => {
-        try {
-          let mediaUrls = []
+    const transformedPosts = await Promise.all(
+      postsWithAuthors
+        .filter((post: any) => {
+          const isValid = post && post.id && typeof post.id === 'string' && post.id.trim() !== ''
+          if (!isValid) {
+            console.warn('📝 FETCH POSTS DRIZZLE: ⚠️ Skipping invalid post in transformation:', post)
+          }
+          return isValid
+        })
+        .map(async post => {
           try {
-            if (post.mediaUrls && Array.isArray(post.mediaUrls)) {
-              mediaUrls = post.mediaUrls
-            } else if (post.mediaUrls && typeof post.mediaUrls === 'string' && post.mediaUrls.trim() !== '') {
-              // Try to parse as JSON first, then as comma-separated string
-              try {
-                mediaUrls = JSON.parse(post.mediaUrls)
-              } catch {
-                // If JSON parsing fails, try comma-separated string
-                mediaUrls = post.mediaUrls.split(',').filter((url: string) => url.trim() !== '')
+            let mediaUrls = []
+            try {
+              if (post.mediaUrls && Array.isArray(post.mediaUrls)) {
+                mediaUrls = post.mediaUrls
+              } else if (post.mediaUrls && typeof post.mediaUrls === 'string' && post.mediaUrls.trim() !== '') {
+                // Try to parse as JSON first, then as comma-separated string
+                try {
+                  mediaUrls = JSON.parse(post.mediaUrls)
+                } catch {
+                  // If JSON parsing fails, try comma-separated string
+                  mediaUrls = post.mediaUrls.split(',').filter((url: string) => url.trim() !== '')
+                }
               }
+            } catch (error) {
+              console.log('📝 FETCH POSTS DRIZZLE: ⚠️ Error parsing mediaUrls for post', post.id, ':', error)
+              mediaUrls = []
+            }
+
+            // Get comment count for this post
+            const commentCountResult = await db
+              .select({ count: count() })
+              .from(comments)
+              .where(eq(comments.postId, post.id))
+
+            const commentCount = commentCountResult[0]?.count || 0
+
+            // Get like count for this post
+            const likeCountResult = await db
+              .select({ count: count() })
+              .from(likes)
+              .where(eq(likes.postId, post.id))
+
+            const likeCount = likeCountResult[0]?.count || 0
+
+            // Get repost count for this post
+            const repostCountResult = await db
+              .select({ count: count() })
+              .from(reposts)
+              .where(eq(reposts.postId, post.id))
+
+            const repostCount = repostCountResult[0]?.count || 0
+
+            return {
+              ...post,
+              mediaUrls,
+              _count: {
+                likes: likeCount,
+                comments: commentCount,
+                reposts: repostCount,
+              },
+              isLiked: false, // We'll add these flags later if needed
+              isReposted: false,
+              isBookmarked: false,
             }
           } catch (error) {
-            console.log('📝 FETCH POSTS DRIZZLE: ⚠️ Error parsing mediaUrls for post', post.id, ':', error)
-            mediaUrls = []
+            console.error('📝 FETCH POSTS DRIZZLE: ❌ Error transforming post:', post, error)
+            return null
           }
-
-          return {
-            ...post,
-            mediaUrls,
-            _count: {
-              likes: 0, // We'll add these counts later if needed
-              comments: 0,
-              reposts: 0,
-            },
-            isLiked: false, // We'll add these flags later if needed
-            isReposted: false,
-            isBookmarked: false,
-          }
-        } catch (error) {
-          console.error('📝 FETCH POSTS DRIZZLE: ❌ Error transforming post:', post, error)
-          return null
-        }
-      })
+        })
+    )
       .filter(Boolean) // Remove any null entries from transformation errors
 
     console.log('📝 FETCH POSTS DRIZZLE: 🔍 First transformed post:', transformedPosts[0])

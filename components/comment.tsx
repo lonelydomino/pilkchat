@@ -42,6 +42,8 @@ export function Comment({
 }: CommentProps) {
   // Debug logging to see the comment structure
   console.log('Comment data:', comment)
+  console.log('Author data:', comment.author)
+  console.log('Author name:', comment.author?.name)
   const [isLiking, setIsLiking] = useState(false)
   const [showReplies, setShowReplies] = useState(false)
   const [showReplyForm, setShowReplyForm] = useState(false)
