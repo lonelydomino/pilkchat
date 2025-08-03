@@ -1,49 +1,86 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
+
+interface UnreadCounts {
+  totalUnread: number
+  conversationsWithUnread: Array<{
+    conversationId: string
+    unreadCount: number
+  }>
+}
 
 export function useUnreadMessages() {
   const { data: session } = useSession()
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isClient, setIsClient] = useState(false)
+  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({
+    totalUnread: 0,
+    conversationsWithUnread: []
+  })
+  const [isLoading, setIsLoading] = useState(false)
 
-  // Ensure we're on the client side
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
+  const fetchUnreadCounts = useCallback(async () => {
+    if (!session?.user?.id) return
 
-  useEffect(() => {
-    if (!session?.user?.id || !isClient) {
-      setUnreadCount(0)
-      setIsLoading(false)
-      return
-    }
-
-    const fetchUnreadCount = async () => {
-      try {
-        const response = await fetch('/api/messages/unread-count/drizzle', {
-          credentials: 'include'
-        })
-        if (response.ok) {
-          const data = await response.json()
-          setUnreadCount(data.count || 0)
-        }
-      } catch (error) {
-        console.error('Error fetching unread messages count:', error)
-      } finally {
-        setIsLoading(false)
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/messages/unread-count/drizzle')
+      if (response.ok) {
+        const data = await response.json()
+        setUnreadCounts(data)
       }
+    } catch (error) {
+      console.error('Error fetching unread counts:', error)
+    } finally {
+      setIsLoading(false)
     }
-
-    fetchUnreadCount()
-
-    // Set up polling to check for new unread messages every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000)
-
-    return () => clearInterval(interval)
   }, [session?.user?.id])
 
-  return { unreadCount, isLoading }
+  // Fetch unread counts on mount and when session changes
+  useEffect(() => {
+    fetchUnreadCounts()
+  }, [fetchUnreadCounts])
+
+  // Poll for updates every 30 seconds
+  useEffect(() => {
+    if (!session?.user?.id) return
+
+    const interval = setInterval(() => {
+      fetchUnreadCounts()
+    }, 30000)
+
+    return () => clearInterval(interval)
+  }, [fetchUnreadCounts, session?.user?.id])
+
+  const markConversationAsRead = useCallback(async (conversationId: string) => {
+    try {
+      await fetch(`/api/conversations/${conversationId}/messages/read/drizzle`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      // Update local state
+      setUnreadCounts(prev => ({
+        totalUnread: Math.max(0, prev.totalUnread - (prev.conversationsWithUnread.find(c => c.conversationId === conversationId)?.unreadCount || 0)),
+        conversationsWithUnread: prev.conversationsWithUnread.filter(c => c.conversationId !== conversationId)
+      }))
+    } catch (error) {
+      console.error('Error marking conversation as read:', error)
+    }
+  }, [])
+
+  const getUnreadCountForConversation = useCallback((conversationId: string) => {
+    return unreadCounts.conversationsWithUnread.find(c => c.conversationId === conversationId)?.unreadCount || 0
+  }, [unreadCounts.conversationsWithUnread])
+
+  return {
+    totalUnread: unreadCounts.totalUnread,
+    conversationsWithUnread: unreadCounts.conversationsWithUnread,
+    isLoading,
+    fetchUnreadCounts,
+    markConversationAsRead,
+    getUnreadCountForConversation
+  }
 } 

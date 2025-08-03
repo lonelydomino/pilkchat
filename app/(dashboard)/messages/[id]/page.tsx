@@ -88,6 +88,26 @@ export default function ConversationPage() {
     fetchMessages()
   }, [fetchConversation, fetchMessages])
 
+  // Mark messages as read when user views the conversation
+  useEffect(() => {
+    if (conversationId && session?.user?.id) {
+      const markAsRead = async () => {
+        try {
+          await fetch(`/api/conversations/${conversationId}/messages/read/drizzle`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+        } catch (error) {
+          console.error('Error marking messages as read:', error)
+        }
+      }
+      
+      markAsRead()
+    }
+  }, [conversationId, session?.user?.id])
+
   useEffect(() => {
     scrollToBottom()
   }, [messages])

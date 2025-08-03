@@ -34,7 +34,7 @@ export function Sidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
   const { unreadCount, isConnected } = useNotifications()
-  const { unreadCount: unreadMessagesCount } = useUnreadMessages()
+  const { totalUnread: unreadMessagesCount } = useUnreadMessages()
   const [bookmarkCount, setBookmarkCount] = useState(0)
 
 

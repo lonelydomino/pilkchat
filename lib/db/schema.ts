@@ -146,6 +146,7 @@ export const messages = pgTable('messages', {
   updatedAt: timestamp('updatedAt').defaultNow(),
   conversationId: text('conversationId').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
   senderId: text('senderId').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  readAt: timestamp('readAt'),
 })
 
 // NextAuth tables

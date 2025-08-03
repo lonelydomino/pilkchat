@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { MessageSquare, Plus, Search, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
+import { useUnreadMessages } from '@/hooks/useUnreadMessages'
 
 interface Conversation {
   id: string
@@ -37,6 +38,7 @@ export default function MessagesPage() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { getUnreadCountForConversation, markConversationAsRead } = useUnreadMessages()
 
   const fetchConversations = useCallback(async () => {
     try {
@@ -144,6 +146,7 @@ export default function MessagesPage() {
               key={conversation.id}
               href={`/messages/${conversation.id}`}
               className="block bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow"
+              onClick={() => markConversationAsRead(conversation.id)}
             >
               <div className="flex items-center space-x-3">
                 {/* Avatar */}
@@ -179,11 +182,14 @@ export default function MessagesPage() {
                       <span className="text-sm text-gray-600 truncate">
                         {conversation.lastMessage.sender.name}: {conversation.lastMessage.content}
                       </span>
-                      {conversation.unreadCount > 0 && (
-                        <span className="bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
-                          {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
-                        </span>
-                      )}
+                      {(() => {
+                        const unreadCount = getUnreadCountForConversation(conversation.id)
+                        return unreadCount > 0 ? (
+                          <span className="bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        ) : null
+                      })()}
                     </div>
                   )}
                 </div>

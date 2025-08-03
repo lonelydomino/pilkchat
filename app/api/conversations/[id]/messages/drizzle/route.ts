@@ -58,6 +58,7 @@ export async function GET(
         createdAt: messages.createdAt,
         updatedAt: messages.updatedAt,
         senderId: messages.senderId,
+        readAt: messages.readAt,
       })
       .from(messages)
       .where(eq(messages.conversationId, conversationId))
