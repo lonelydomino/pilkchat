@@ -51,9 +51,13 @@ export async function POST(request: NextRequest) {
 
     // Create new conversation
     console.log('💬 TEST CONVERSATION: ➕ Creating conversation...')
+    const now = new Date()
     const [newConversation] = await db
       .insert(conversations)
-      .values({})
+      .values({
+        createdAt: now,
+        updatedAt: now,
+      })
       .returning({
         id: conversations.id,
         createdAt: conversations.createdAt,
