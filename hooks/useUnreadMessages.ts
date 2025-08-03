@@ -20,17 +20,25 @@ export function useUnreadMessages() {
   const [isLoading, setIsLoading] = useState(false)
 
   const fetchUnreadCounts = useCallback(async () => {
-    if (!session?.user?.id) return
+    if (!session?.user?.id) {
+      console.log('🔍 UNREAD MESSAGES: No session user ID')
+      return
+    }
 
+    console.log('🔍 UNREAD MESSAGES: Fetching unread counts for user:', session.user.id)
     setIsLoading(true)
     try {
       const response = await fetch('/api/messages/unread-count/drizzle')
+      console.log('🔍 UNREAD MESSAGES: Response status:', response.status)
       if (response.ok) {
         const data = await response.json()
+        console.log('🔍 UNREAD MESSAGES: Received data:', data)
         setUnreadCounts(data)
+      } else {
+        console.log('🔍 UNREAD MESSAGES: Response not ok:', response.status)
       }
     } catch (error) {
-      console.error('Error fetching unread counts:', error)
+      console.error('🔍 UNREAD MESSAGES: Error fetching unread counts:', error)
     } finally {
       setIsLoading(false)
     }

@@ -1,1 +1,3 @@
-{}
+{
+  "/api/messages/unread-count/drizzle/route": "app/api/messages/unread-count/drizzle/route.js"
+}

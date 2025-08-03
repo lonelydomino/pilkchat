@@ -75,6 +75,7 @@ export function Sidebar() {
       return unreadCount
     }
     if (itemName === 'Messages') {
+      console.log('🔍 SIDEBAR: Messages count:', unreadMessagesCount)
       return unreadMessagesCount
     }
     if (itemName === 'Bookmarks') {
