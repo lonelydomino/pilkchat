@@ -19,7 +19,7 @@ interface Message {
     name: string
     username: string
     image?: string
-  }
+  } | null
 }
 
 interface Conversation {
@@ -35,7 +35,7 @@ interface Conversation {
 export default function ConversationPage() {
   const params = useParams()
   const router = useRouter()
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const conversationId = params.id as string
   const { subscribeToConversation, unsubscribeFromConversation } = useMessages()
   
@@ -137,9 +137,23 @@ export default function ConversationPage() {
   const getConversationTitle = () => {
     if (!conversation) return ''
     if (conversation.participants.length === 1) {
-      return conversation.participants[0].name
+      return conversation.participants[0]?.name || 'Unknown User'
     }
-    return conversation.participants.map(p => p.name).join(', ')
+    return conversation.participants.map(p => p?.name || 'Unknown User').join(', ')
+  }
+
+  if (status === 'unauthenticated') {
+    return (
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h1>
+          <p className="text-gray-600">Please log in to view messages.</p>
+          <Link href="/login">
+            <Button className="mt-4">Go to Login</Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   if (error) {
@@ -156,7 +170,7 @@ export default function ConversationPage() {
     )
   }
 
-  if (isLoading) {
+  if (status === 'loading' || isLoading) {
     return (
       <div className="max-w-2xl mx-auto p-6">
         <div className="animate-pulse">
@@ -187,7 +201,7 @@ export default function ConversationPage() {
               {conversation?.participants[0]?.image ? (
                 <img 
                   src={conversation.participants[0].image} 
-                  alt={`${conversation.participants[0].name}'s profile`}
+                  alt={`${conversation.participants[0]?.name || 'Unknown'}'s profile`}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -198,7 +212,7 @@ export default function ConversationPage() {
               <h1 className="font-semibold text-gray-900">{getConversationTitle()}</h1>
               <p className="text-sm text-gray-500">
                 {conversation?.participants.length === 1 
-                  ? `@${conversation.participants[0].username}`
+                  ? `@${conversation.participants[0]?.username || 'unknown'}`
                   : `${conversation?.participants.length} people`
                 }
               </p>
@@ -217,21 +231,21 @@ export default function ConversationPage() {
           messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${message.sender.id === session?.user?.id ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${message.sender?.id === session?.user?.id ? 'justify-end' : 'justify-start'}`}
             >
               <div
                 className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                  message.sender.id === session?.user?.id
+                  message.sender?.id === session?.user?.id
                     ? 'bg-blue-500 text-white'
                     : 'bg-gray-200 text-gray-900'
                 }`}
               >
                 <div className="flex items-center space-x-2 mb-1">
                   <div className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    {message.sender.image ? (
+                    {message.sender?.image ? (
                       <img 
                         src={message.sender.image} 
-                        alt={`${message.sender.name}'s profile`}
+                        alt={`${message.sender.name || 'Unknown'}'s profile`}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -239,7 +253,7 @@ export default function ConversationPage() {
                     )}
                   </div>
                   <span className="text-xs opacity-75">
-                    {message.sender.name}
+                    {message.sender?.name || 'Unknown User'}
                   </span>
                 </div>
                 <p className="text-sm">{message.content}</p>
