@@ -178,6 +178,24 @@ export async function POST(
 
     console.log('💬 MESSAGES DRIZZLE: ✅ Message created with ID:', newMessage.id)
 
+    // Get sender information for the new message
+    console.log('💬 MESSAGES DRIZZLE: 🔍 Fetching sender information...')
+    const senderData = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        username: users.username,
+        image: users.image,
+      })
+      .from(users)
+      .where(eq(users.id, newMessage.senderId))
+      .limit(1)
+
+    const messageWithSender = {
+      ...newMessage,
+      sender: senderData[0] || null,
+    }
+
     // Update conversation's updatedAt timestamp
     console.log('💬 MESSAGES DRIZZLE: 🔄 Updating conversation timestamp...')
     await db
@@ -190,7 +208,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       message: 'Message sent successfully',
-      messageData: newMessage
+      messageData: messageWithSender
     })
 
   } catch (error) {

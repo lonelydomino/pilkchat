@@ -124,7 +124,7 @@ export default function ConversationPage() {
 
       if (response.ok) {
         const data = await response.json()
-        setMessages(prev => [...prev, data.message])
+        setMessages(prev => [...prev, data.messageData])
         setNewMessage('')
       }
     } catch (error) {

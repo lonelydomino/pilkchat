@@ -25,7 +25,15 @@ export function highlightHashtags(text: string): string {
 }
 
 export function formatDate(date: Date | string) {
+  if (!date) return 'just now'
+  
   const d = new Date(date)
+  
+  // Check if the date is valid
+  if (isNaN(d.getTime())) {
+    return 'just now'
+  }
+  
   const now = new Date()
   const diffInSeconds = Math.floor((now.getTime() - d.getTime()) / 1000)
 
