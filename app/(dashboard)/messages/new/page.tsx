@@ -81,7 +81,18 @@ export default function NewMessagePage() {
 
       if (response.ok) {
         const data = await response.json()
-        router.push(`/messages/${data.conversation.id}`)
+        console.log('💬 NewMessage: API response:', data)
+        
+        if (data.conversation && data.conversation.id) {
+          router.push(`/messages/${data.conversation.id}`)
+        } else {
+          console.error('💬 NewMessage: ❌ Invalid response structure:', data)
+          throw new Error('Invalid response structure')
+        }
+      } else {
+        const errorData = await response.json()
+        console.error('💬 NewMessage: ❌ API error:', errorData)
+        throw new Error(errorData.message || 'Failed to create conversation')
       }
     } catch (error) {
       console.error('Error creating conversation:', error)

@@ -174,6 +174,7 @@ export async function POST(request: NextRequest) {
     )
 
     console.log('💬 CONVERSATIONS DRIZZLE: ✅ Participants added to conversation')
+    console.log('💬 CONVERSATIONS DRIZZLE: 📤 Returning conversation:', newConversation)
 
     return NextResponse.json({
       success: true,
