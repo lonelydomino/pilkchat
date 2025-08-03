@@ -166,6 +166,7 @@ export async function POST(
         content: content.trim(),
         conversationId,
         senderId: userId,
+        updatedAt: new Date(),
       })
       .returning({
         id: messages.id,

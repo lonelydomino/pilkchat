@@ -142,7 +142,10 @@ export async function POST(request: NextRequest) {
       try {
         await db
           .update(users)
-          .set({ image: cloudinaryResult.url })
+          .set({ 
+            image: cloudinaryResult.url,
+            updatedAt: new Date()
+          })
           .where(eq(users.id, session.user.id))
 
         console.log('🖼️ UPLOAD DRIZZLE: ✅ User image updated in database')

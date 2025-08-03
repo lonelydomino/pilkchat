@@ -43,6 +43,7 @@ export async function PUT(request: NextRequest) {
     if (location !== undefined) updateData.location = location
     if (website !== undefined) updateData.website = website
     if (image !== undefined) updateData.image = image
+    updateData.updatedAt = new Date() // Always update the timestamp
 
     // Update user profile
     console.log('👤 PROFILE UPDATE DRIZZLE: 🔄 Updating profile...')

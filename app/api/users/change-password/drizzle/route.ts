@@ -84,7 +84,10 @@ export async function POST(request: NextRequest) {
     console.log('🔐 CHANGE PASSWORD DRIZZLE: 🔄 Updating password...')
     await db
       .update(users)
-      .set({ password: hashedNewPassword })
+      .set({ 
+        password: hashedNewPassword,
+        updatedAt: new Date()
+      })
       .where(eq(users.id, userId))
 
     console.log('🔐 CHANGE PASSWORD DRIZZLE: ✅ Password updated successfully')

@@ -38,7 +38,10 @@ export async function POST(request: NextRequest) {
     // Update user's name in database
     const [updatedUser] = await db
       .update(users)
-      .set({ name: name.trim() })
+      .set({ 
+        name: name.trim(),
+        updatedAt: new Date()
+      })
       .where(eq(users.id, session.user.id))
       .returning({
         id: users.id,
