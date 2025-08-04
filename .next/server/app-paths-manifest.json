@@ -1,12 +1,17 @@
 {
   "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/api/messages/unread-count/drizzle/route": "app/api/messages/unread-count/drizzle/route.js",
   "/api/notifications/unread-count/drizzle/route": "app/api/notifications/unread-count/drizzle/route.js",
+  "/api/conversations/drizzle/route": "app/api/conversations/drizzle/route.js",
+  "/api/conversations/[id]/messages/read/drizzle/route": "app/api/conversations/[id]/messages/read/drizzle/route.js",
+  "/api/conversations/[id]/messages/drizzle/route": "app/api/conversations/[id]/messages/drizzle/route.js",
+  "/api/messages/stream/route": "app/api/messages/stream/route.js",
   "/not-found": "app/not-found.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/fetch-posts-drizzle/route": "app/api/fetch-posts-drizzle/route.js",
   "/api/notifications/drizzle/route": "app/api/notifications/drizzle/route.js",
   "/api/bookmarks/drizzle/route": "app/api/bookmarks/drizzle/route.js",
   "/api/notifications/stream/route": "app/api/notifications/stream/route.js",
-  "/api/messages/unread-count/drizzle/route": "app/api/messages/unread-count/drizzle/route.js",
-  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js"
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
+  "/(dashboard)/messages/page": "app/(dashboard)/messages/page.js",
+  "/(dashboard)/messages/[id]/page": "app/(dashboard)/messages/[id]/page.js"
 }

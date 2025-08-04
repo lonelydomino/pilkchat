@@ -93,14 +93,19 @@ export default function ConversationPage() {
     if (conversationId && session?.user?.id) {
       const markAsRead = async () => {
         try {
-          await fetch(`/api/conversations/${conversationId}/messages/read/drizzle`, {
+          console.log('🔍 MARK READ: Marking messages as read for conversation:', conversationId)
+          const response = await fetch(`/api/conversations/${conversationId}/messages/read/drizzle`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
           })
+          console.log('🔍 MARK READ: Response status:', response.status)
+          if (response.ok) {
+            console.log('🔍 MARK READ: Messages marked as read successfully')
+          }
         } catch (error) {
-          console.error('Error marking messages as read:', error)
+          console.error('🔍 MARK READ: Error marking messages as read:', error)
         }
       }
       

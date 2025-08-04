@@ -59,7 +59,7 @@ export async function POST(
       .where(
         and(
           eq(messages.conversationId, conversationId),
-          eq(messages.senderId, userId),
+          ne(messages.senderId, userId), // Messages NOT sent by current user
           isNull(messages.readAt)
         )
       )
