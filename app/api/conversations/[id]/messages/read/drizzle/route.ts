@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/auth-drizzle'
 import { db } from '@/lib/db'
 import { messages, conversationParticipants } from '@/lib/db/schema'
-import { eq, and, isNull } from 'drizzle-orm'
+import { eq, and, isNull, ne } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
 
