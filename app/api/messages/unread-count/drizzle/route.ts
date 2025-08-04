@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       .from(messages)
       .where(
         and(
-          sql`${messages.conversationId} = ANY(${conversationIds})`,
+          sql`${messages.conversationId} = ANY(${conversationIds}::text[])`,
           ne(messages.senderId, userId), // Messages not sent by current user
           isNull(messages.readAt) // Messages not read
         )
