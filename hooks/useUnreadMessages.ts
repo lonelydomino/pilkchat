@@ -13,6 +13,8 @@ interface UnreadCounts {
 
 export function useUnreadMessages() {
   const { data: session } = useSession()
+  console.log('🔍 UNREAD MESSAGES HOOK: Hook initialized, session:', session?.user?.id)
+  
   const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({
     totalUnread: 0,
     conversationsWithUnread: []

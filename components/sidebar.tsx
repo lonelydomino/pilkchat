@@ -35,6 +35,7 @@ export function Sidebar() {
   const { data: session } = useSession()
   const { unreadCount, isConnected } = useNotifications()
   const { totalUnread: unreadMessagesCount } = useUnreadMessages()
+  console.log('🔍 SIDEBAR: Component rendered, unreadMessagesCount:', unreadMessagesCount)
   const [bookmarkCount, setBookmarkCount] = useState(0)
 
 
