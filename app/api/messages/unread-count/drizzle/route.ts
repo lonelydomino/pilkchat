@@ -47,20 +47,31 @@ export async function GET(request: NextRequest) {
     const conversationIds = userConversations.map(c => c.conversationId)
 
     // Get unread message counts for each conversation
-    const unreadCounts = await db
-      .select({
-        conversationId: messages.conversationId,
-        unreadCount: sql<number>`count(*)::int`,
-      })
-      .from(messages)
-      .where(
-        and(
-          sql`${messages.conversationId} = ANY(${conversationIds}::text[])`,
-          ne(messages.senderId, userId), // Messages not sent by current user
-          isNull(messages.readAt) // Messages not read
-        )
-      )
-      .groupBy(messages.conversationId)
+    let unreadCounts = []
+    
+    if (conversationIds.length > 0) {
+      // Use a simpler approach - query each conversation separately
+      for (const conversationId of conversationIds) {
+        const count = await db
+          .select({
+            conversationId: messages.conversationId,
+            unreadCount: sql<number>`count(*)::int`,
+          })
+          .from(messages)
+          .where(
+            and(
+              eq(messages.conversationId, conversationId),
+              ne(messages.senderId, userId), // Messages not sent by current user
+              isNull(messages.readAt) // Messages not read
+            )
+          )
+          .groupBy(messages.conversationId)
+        
+        if (count.length > 0) {
+          unreadCounts.push(count[0])
+        }
+      }
+    }
 
     console.log('📊 UNREAD COUNT DRIZZLE: ✅ Unread counts:', unreadCounts)
 
