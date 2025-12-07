@@ -1,4 +1,4 @@
-# Pilk Chat
+# BlueSky Clone
 
 A modern, decentralized social media platform built with Next.js, TypeScript, and PostgreSQL.
 
@@ -39,7 +39,7 @@ A modern, decentralized social media platform built with Next.js, TypeScript, an
 1. Clone the repository:
 ```bash
 git clone <your-repo-url>
-cd pilk-chat
+cd bluesky-clone
 ```
 
 2. Install dependencies:
@@ -55,7 +55,7 @@ cp .env.example .env.local
 4. Configure your `.env.local`:
 ```env
 # Database
-DATABASE_URL="postgresql://username:password@localhost:5432/pilk_chat"
+DATABASE_URL="postgresql://username:password@localhost:5432/bluesky_clone"
 
 # NextAuth
 NEXTAUTH_SECRET="your-secret-key"

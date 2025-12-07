@@ -89,7 +89,7 @@ export function Sidebar() {
     <div className="w-64 bg-white shadow-lg h-screen flex flex-col">
       {/* Logo */}
       <div className="p-6 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-blue-600">Pilk Chat</h1>
+        <h1 className="text-2xl font-bold text-blue-600">BlueSky Clone</h1>
       </div>
 
       {/* Navigation */}

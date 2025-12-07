@@ -1,4 +1,4 @@
-# Pilk Chat Setup Guide
+# BlueSky Clone Setup Guide
 
 ## Prerequisites
 
@@ -23,7 +23,7 @@ cp env.example .env.local
 
 Edit `.env.local` and update the database URL:
 ```env
-DATABASE_URL="postgresql://username:password@localhost:5432/pilk_chat"
+DATABASE_URL="postgresql://username:password@localhost:5432/bluesky_clone"
 NEXTAUTH_SECRET="your-secret-key-here"
 NEXTAUTH_URL="http://localhost:3000"
 ```
@@ -32,7 +32,7 @@ NEXTAUTH_URL="http://localhost:3000"
 
 Create a PostgreSQL database:
 ```bash
-createdb pilk_chat
+createdb bluesky_clone
 ```
 
 Generate Prisma client and push schema:
@@ -115,7 +115,7 @@ npx prisma db push --force-reset
 ### Database Connection Issues
 - Make sure PostgreSQL is running
 - Check your DATABASE_URL in `.env.local`
-- Ensure the database exists: `createdb pilk_chat`
+- Ensure the database exists: `createdb bluesky_clone`
 
 ### Port Already in Use
 - Change the port: `npm run dev -- -p 3001`

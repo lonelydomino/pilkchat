@@ -1,4 +1,4 @@
--- Pilk Chat Database Schema
+-- BlueSky Clone Database Schema
 -- Run this in your cloud PostgreSQL database (Supabase, Railway, Neon, etc.)
 
 -- Enable UUID extension (if needed)

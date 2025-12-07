@@ -23,7 +23,7 @@ export default function HomePage() {
       <nav className="flex items-center justify-between p-6">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-blue-600 rounded-lg"></div>
-          <span className="text-xl font-bold text-gray-900">Pilk Chat</span>
+          <span className="text-xl font-bold text-gray-900">BlueSky Clone</span>
         </div>
         <div className="flex items-center space-x-4">
           <Link href="/login">

@@ -11,7 +11,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Pilk Chat',
+  title: 'BlueSky Clone',
   description: 'A modern, decentralized social media platform',
 }
 
